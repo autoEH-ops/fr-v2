@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyAlbJy9gY3ehOISqXXFrW6qKbTbnu0J9-k</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1093411058205</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.pbSecurityHybridMain600</string>
+	<key>PROJECT_ID</key>
+	<string>pb-security-hybrid-600</string>
+	<key>STORAGE_BUCKET</key>
+	<string>pb-security-hybrid-600.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1093411058205:ios:6a04434c53b3427f730cf4</string>
+</dict>
+</plist>

@@ -1,0 +1,27 @@
+{
+  "projects": {
+    "61": "pb-test-618",
+    "default": "pb-test-618",
+    "618 hop": "pb-test-618",
+    "618 last": "pb-test-618",
+    "updating 618": "pb-test-618",
+    "MOD": "modify-pb-security-618",
+    "Security M": "security-management-2e618",
+    "security-management": "security-management-2e618",
+    "work": "security-management-2e618",
+    "test": "modify-pb-security-618",
+    "test2": "security-management-2e618",
+    "v5": "security-management-2e618",
+    "v56": "testing-projects-27380",
+    "bn": "ca-system-intern-618-aacdd",
+    "v12": "testing-projects-27380",
+    "m1": "testing-projects-27380",
+    "b5": "security-management-2e618",
+    "v4": "security-management-2e618",
+    "v2": "bp-security-3df47",
+    "face-recognition": "bp-system-sheets"
+  },
+  "targets": {},
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
+}
