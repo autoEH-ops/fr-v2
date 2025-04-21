@@ -55,6 +55,19 @@ class SupabaseDbHelper {
     }
   }
 
+  Future<void> deleteMultiple<T>(
+      {required String table,
+      required List<T> ids,
+      required String fieldName}) async {
+    try {
+      if (ids.isNotEmpty) {
+        await supabase.from(table).delete().inFilter(fieldName, ids);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<T?> getRowByField<T>(
     String table,
     String fieldName,
@@ -83,11 +96,17 @@ class SupabaseDbHelper {
     required String orderByField, // e.g., 'attendance_time'
     required T Function(Map<String, dynamic>) fromMap,
   }) async {
+    // Format date to just the date part for comparison
+    final date = DateTime.now();
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(Duration(days: 1));
     try {
       final response = await supabase
           .from(table)
           .select()
           .eq(fieldName, fieldValue)
+          // .gte('activity_time', startOfDay.toIso8601String())
+          // .lt('activity_time', endOfDay.toIso8601String())
           .order(orderByField, ascending: false) // Sort by latest
           .limit(1) // Only the latest one
           .maybeSingle();
@@ -178,6 +197,41 @@ class SupabaseDbHelper {
   Future<void> insertIntoBucket(String filePath, Uint8List imageBytes) async {
     try {
       await supabase.storage.from('images').uploadBinary(filePath, imageBytes);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> deleteFromBucket(List<String> filePaths) async {
+    try {
+      if (filePaths.isNotEmpty) {
+        await supabase.storage.from('images').remove(filePaths);
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<T>> getRowsForToday<T>({
+    required String table,
+    required Account account,
+    required T Function(Map<String, dynamic>) fromMap,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      final response = await supabase
+          .from(table)
+          .select()
+          .eq('account_id', account.id!)
+          .gte('activity_time', startOfDay.toIso8601String())
+          .lt('activity_time', endOfDay.toIso8601String());
+
+      return (response as List)
+          .map((row) => fromMap(row as Map<String, dynamic>))
+          .toList();
     } catch (e) {
       rethrow;
     }

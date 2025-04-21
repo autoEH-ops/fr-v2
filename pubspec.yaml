@@ -40,6 +40,7 @@ dependencies:
   url_launcher: any
   flutter_dotenv: ^5.2.1
   location: ^8.0.0
+  data_table_2: ^2.6.0
 
 dev_dependencies:
   flutter_test:
@@ -67,5 +68,4 @@ flutter:
   assets:
     - assets/
     - assets/icon/logo.png
-    - assets/credentials.json
     - .env

@@ -3,8 +3,11 @@ import 'package:created_by_618_abdo/attendance_marking/take_attendance.dart';
 
 import '../registration/register_attendance.dart';
 import 'Login/LoginPage.dart';
+import 'activity_logs/activity_logs.dart';
+import 'attendance_history/attendance_records.dart';
 import 'db/supabase_db_helper.dart';
 import 'geolocator/geolocator_service.dart';
+import 'manage_accounts/manage_accounts.dart';
 import 'model/activity.dart';
 import 'package:flutter/material.dart';
 import 'model/account.dart';
@@ -260,6 +263,52 @@ class _AccountDashboardState extends State<AccountDashboard> {
                             MaterialPageRoute(
                                 builder: (_) => AttendanceDashboard(
                                     account: widget.account)));
+                      },
+                    ),
+                  if (widget.account.role == 'super_admin' ||
+                      widget.account.role == 'viewer')
+                    _buildAccessCard(
+                      icon: Icons.access_alarm,
+                      title: "Daily Activity Logs",
+                      subtitle: "Daily logs of activity during work",
+                      color: Colors.indigo.shade600,
+                      onTap: () async {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) =>
+                                    ActivityLogs(account: widget.account)));
+                      },
+                    ),
+                  if (widget.account.role == 'super_admin' ||
+                      widget.account.role == 'viewer')
+                    _buildAccessCard(
+                      icon: Icons.calendar_month,
+                      title: "Attendance History",
+                      subtitle: "History of attendance",
+                      color: Colors.teal.shade600,
+                      onTap: () async {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => AttendanceRecords(
+                                    account: widget.account)));
+                      },
+                    ),
+                  if (widget.account.role == 'super_admin' ||
+                      widget.account.role == 'admin')
+                    _buildAccessCard(
+                      icon: Icons.manage_accounts,
+                      title: "Manage Accounts",
+                      subtitle: "Create, Update, and Delete Accounts",
+                      color: Colors.indigo.shade600,
+                      onTap: () async {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => ManageAccounts(
+                                    account: widget.account,
+                                    systemSettings: widget.systemSettings)));
                       },
                     ),
                   if (widget.account.role == 'super_admin' ||

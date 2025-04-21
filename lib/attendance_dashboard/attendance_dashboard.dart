@@ -1,5 +1,7 @@
+import 'package:created_by_618_abdo/attendance_history/attendance_records.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // For formatting date/time
+import '../activity_logs/activity_logs.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '../model/activity.dart';
@@ -19,8 +21,8 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
   Attendance? latestAttendance;
   Activity? latestActivity;
-  Activity? checkOutEarly;
-  Activity? isLate;
+  // Activity? checkOutEarly;
+  // Activity? isLate;
   bool isLoading = true;
 
   @override
@@ -70,8 +72,8 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
     setState(() {
       latestAttendance = attendance;
       latestActivity = activity;
-      checkOutEarly = activityMessage;
-      isLate = checkLate;
+      // checkOutEarly = activityMessage;
+      // isLate = checkLate;
       isLoading = false;
     });
   }
@@ -89,11 +91,7 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
       ),
       body: isLoading
           ? Center(
-              child: IconButton(
-                  onPressed: () {
-                    debugPrint("${isLate == null ? "null" : "not_null"}");
-                  },
-                  icon: Icon(Icons.abc)),
+              child: const CircularProgressIndicator(),
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24.0),
@@ -188,19 +186,27 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
 
                   const SizedBox(height: 40),
                   // Status and Activity Container
-                  // _buildStatus(),
+                  _buildStatus(),
                   // Remarks Section
-                  if (checkOutEarly != null || isLate != null) _buildRemarks(),
+                  // if (checkOutEarly != null || isLate != null) _buildRemarks(),
                   // Action Buttons
                   Row(
                     children: [
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            // Navigate to Attendance Records
+                            // Navigate to Attendance History
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => AttendanceRecords(
+                                        account: widget.account)));
                           },
-                          icon: const Icon(Icons.fact_check),
-                          label: const Text("Records"),
+                          icon: const Icon(
+                            Icons.fact_check,
+                            color: Colors.white,
+                          ),
+                          label: const Text("History"),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -217,11 +223,16 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
                         child: ElevatedButton.icon(
                           onPressed: () {
                             // Navigate to Daily Activity
-                            debugPrint(
-                                "latest: ${latestAttendance?.attendanceStatus}");
-                            debugPrint("latest: ${latestActivity?.activity}");
+                            Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) =>
+                                        ActivityLogs(account: widget.account)));
                           },
-                          icon: const Icon(Icons.today),
+                          icon: const Icon(
+                            Icons.today,
+                            color: Colors.white,
+                          ),
                           label: const Text("Activity"),
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -332,42 +343,44 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
               ),
             ),
             const SizedBox(height: 8),
-            if (checkOutEarly != null)
-              Text(
-                "Given Reason (Checking Out Early): ", // Function to return message
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
+            // if (checkOutEarly != null)
+            Text(
+              "Given Reason (Checking Out Early): ", // Function to return message
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
               ),
-            if (checkOutEarly != null)
-              Text(
-                "${checkOutEarly?.message!}", // Function to return message
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
+            ),
+            // if (checkOutEarly != null)
+            Text(
+              "",
+              // "${checkOutEarly?.message!}", // Function to return message
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
               ),
-            if (isLate != null)
-              Text(
-                "Late:", // Function to return message
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
+            ),
+            // if (isLate != null)
+            Text(
+              "Late:", // Function to return message
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
               ),
-            if (isLate != null)
-              Text(
-                "${isLate?.message!}", // Function to return message
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
+            ),
+            // if (isLate != null)
+            Text(
+              "",
+              // "${isLate?.message!}", // Function to return message
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: Colors.black87,
               ),
+            ),
           ],
         ),
       );
