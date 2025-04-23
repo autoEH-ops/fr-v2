@@ -367,7 +367,10 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => FaceRegistration(account: account),
+                  builder: (context) => FaceRegistration(
+                    account: account,
+                    systemSettings: widget.systemSettings,
+                  ),
                 ),
               );
             },

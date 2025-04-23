@@ -12,10 +12,13 @@ import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '../model/recognition.dart';
 import '../attendance_dashboard/recognizer.dart';
+import '../model/setting.dart';
 
 class FaceRegistration extends StatefulWidget {
   final Account account;
-  const FaceRegistration({super.key, required this.account});
+  final List<Setting> systemSettings;
+  const FaceRegistration(
+      {super.key, required this.account, required this.systemSettings});
 
   @override
   State<FaceRegistration> createState() => _FaceRegistrationState();
@@ -230,8 +233,10 @@ class _FaceRegistrationState extends State<FaceRegistration> {
                         Navigator.of(context).pop(); // Close dialog
                         Navigator.of(context).pop(); // Go back
                         Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) =>
-                                AttendanceDashboard(account: newAccount!)));
+                            builder: (context) => AttendanceDashboard(
+                                  account: newAccount!,
+                                  systemSettings: widget.systemSettings,
+                                )));
                       } catch (e) {
                         debugPrint("Registration error: $e");
                         ScaffoldMessenger.of(context).showSnackBar(

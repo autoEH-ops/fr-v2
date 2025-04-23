@@ -4,6 +4,7 @@ import 'package:created_by_618_abdo/attendance_marking/take_attendance.dart';
 import '../registration/register_attendance.dart';
 import 'Login/LoginPage.dart';
 import 'activity_logs/activity_logs.dart';
+import 'admin/admin_dashboard.dart';
 import 'attendance_history/attendance_records.dart';
 import 'db/supabase_db_helper.dart';
 import 'geolocator/geolocator_service.dart';
@@ -225,7 +226,11 @@ class _AccountDashboardState extends State<AccountDashboard> {
                           Navigator.of(context).pop();
 
                           if (checkoutEarly?.message == null) {
-                            _navigateTo(context, TakeAttendance());
+                            _navigateTo(
+                                context,
+                                TakeAttendance(
+                                  systemSettings: widget.systemSettings,
+                                ));
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -262,7 +267,26 @@ class _AccountDashboardState extends State<AccountDashboard> {
                             context,
                             MaterialPageRoute(
                                 builder: (_) => AttendanceDashboard(
-                                    account: widget.account)));
+                                      account: widget.account,
+                                      systemSettings: widget.systemSettings,
+                                    )));
+                      },
+                    ),
+                  if (widget.account.role == 'super_admin' ||
+                      widget.account.role == 'viewer')
+                    _buildAccessCard(
+                      icon: Icons.assignment,
+                      title: "Admin Dashboard",
+                      subtitle: "Admin Dashboard Go Here",
+                      color: Colors.pink.shade600,
+                      onTap: () async {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => AdminDashboard(
+                                      account: widget.account,
+                                      systemSettings: widget.systemSettings,
+                                    )));
                       },
                     ),
                   if (widget.account.role == 'super_admin' ||

@@ -12,9 +12,11 @@ import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '../model/recognition.dart';
 import '../attendance_dashboard/recognizer.dart';
+import '../model/setting.dart';
 
 class TakeAttendance extends StatefulWidget {
-  const TakeAttendance({super.key});
+  final List<Setting> systemSettings;
+  const TakeAttendance({super.key, required this.systemSettings});
 
   @override
   State<TakeAttendance> createState() => _TakeAttendanceState();
@@ -155,15 +157,19 @@ class _TakeAttendanceState extends State<TakeAttendance> {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) =>
-                        AttendanceDashboard(account: response.account!)));
+                    builder: (_) => AttendanceDashboard(
+                          account: response.account!,
+                          systemSettings: widget.systemSettings,
+                        )));
           case MarkAttendanceResult.updatedActivity:
             Navigator.of(context).pop();
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) =>
-                        AttendanceDashboard(account: response.account!)));
+                    builder: (_) => AttendanceDashboard(
+                          account: response.account!,
+                          systemSettings: widget.systemSettings,
+                        )));
           case MarkAttendanceResult.cancelled:
             Navigator.of(context).pop();
             break;
@@ -172,8 +178,10 @@ class _TakeAttendanceState extends State<TakeAttendance> {
             Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) =>
-                        AttendanceDashboard(account: response.account!)));
+                    builder: (_) => AttendanceDashboard(
+                          account: response.account!,
+                          systemSettings: widget.systemSettings,
+                        )));
             break;
           case MarkAttendanceResult.error:
             ScaffoldMessenger.of(context).showSnackBar(

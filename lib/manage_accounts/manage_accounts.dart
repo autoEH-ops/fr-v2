@@ -46,13 +46,23 @@ class _ManageAccountsState extends State<ManageAccounts> {
     });
   }
 
-  void _navigateToAccountDetail(Account account) {
-    Navigator.push(
+  void _navigateToAccountDetail(Account account) async {
+    final updatedAccount = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ManageAccount(account: account),
       ),
     );
+
+    if (updatedAccount != null) {
+      setState(() {
+        // Update your local UI / list / view model etc.
+        account.name = updatedAccount.name;
+        account.email = updatedAccount.email;
+        account.phone = updatedAccount.phone;
+        account.role = updatedAccount.role;
+      });
+    }
   }
 
   void _deleteSelectedAccounts() async {
@@ -60,9 +70,9 @@ class _ManageAccountsState extends State<ManageAccounts> {
 
     final imagePaths =
         selectedAccounts.where((a) => a.imageUrl != null).map((a) {
-      final uri = Uri.parse(a.imageUrl!);
-      return uri.pathSegments
-          .last; // Assumes path is like /storage/v1/object/public/images/<filename>
+      final result = a.imageUrl!.split('public/').last;
+      final publicPath = 'public/$result';
+      return publicPath; // Assumes path is like /storage/v1/object/public/images/<filename>
     }).toList();
 
     try {
@@ -76,7 +86,6 @@ class _ManageAccountsState extends State<ManageAccounts> {
 
       // Delete images from Supabase Storage
       await dbHelper.deleteFromBucket(imagePaths);
-      debugPrint("Get here: _delete.");
 
       // Update UI
       await loadLatestData();

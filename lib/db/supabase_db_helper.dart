@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -40,6 +41,15 @@ class SupabaseDbHelper {
   }
 
   Future<void> update(String table, int id, Map<String, dynamic> row) async {
+    try {
+      await supabase.from(table).update(row).eq('id', id).select();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateUuid(
+      String table, String id, Map<String, dynamic> row) async {
     try {
       await supabase.from(table).update(row).eq('id', id).select();
     } catch (e) {
@@ -207,6 +217,19 @@ class SupabaseDbHelper {
       if (filePaths.isNotEmpty) {
         await supabase.storage.from('images').remove(filePaths);
       }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateFromBucket(File pickFile, Account account) async {
+    String result = account.imageUrl!.split('public/').last;
+    String publicPath = 'public/$result';
+    try {
+      await supabase.storage.from('images').update(
+            publicPath,
+            pickFile,
+          );
     } catch (e) {
       rethrow;
     }

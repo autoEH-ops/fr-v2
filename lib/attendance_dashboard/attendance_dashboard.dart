@@ -3,14 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // For formatting date/time
 import '../activity_logs/activity_logs.dart';
 import '../db/supabase_db_helper.dart';
+import '../geolocator/geolocator_service.dart';
 import '../model/account.dart';
 import '../model/activity.dart';
 import '../model/attendance.dart';
+import '../model/setting.dart';
+import '../widget/dashboard_drawer.dart';
 import 'dashboard_logic.dart';
 
 class AttendanceDashboard extends StatefulWidget {
   final Account account;
-  const AttendanceDashboard({super.key, required this.account});
+  final List<Setting> systemSettings;
+  const AttendanceDashboard(
+      {super.key, required this.account, required this.systemSettings});
 
   @override
   State<AttendanceDashboard> createState() => _AttendanceDashboardState();
@@ -24,11 +29,24 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
   // Activity? checkOutEarly;
   // Activity? isLate;
   bool isLoading = true;
+  late Activity? activity;
+  double locationLat = 0.0;
+  double locationLong = 0.0;
+  final GeolocatorService _geolocatorService = GeolocatorService();
+  final DashboardDrawer _dashboardDrawer = DashboardDrawer();
 
   @override
   void initState() {
     super.initState();
     loadLatestData();
+    locationLat = double.parse(widget.systemSettings[0].value);
+    locationLong = double.parse(widget.systemSettings[1].value);
+  }
+
+  Future<Activity?> checkEarlyCheckOut() async {
+    activity = await dbHelper.getActivityRowWhere(
+        'activities', widget.account, DateTime.now(), Activity.fromMap);
+    return activity;
   }
 
   String statusLogic(Attendance attendance) {
@@ -89,6 +107,14 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
         elevation: 1,
         foregroundColor: Colors.black87,
       ),
+      drawer: _dashboardDrawer.buildDashboardDrawer(
+          context: context,
+          account: widget.account,
+          systemSettings: widget.systemSettings,
+          geolocatorService: _geolocatorService,
+          checkEarlyCheckOut: checkEarlyCheckOut,
+          locationLat: locationLat,
+          locationLong: locationLong),
       body: isLoading
           ? Center(
               child: const CircularProgressIndicator(),

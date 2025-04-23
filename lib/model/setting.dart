@@ -13,7 +13,7 @@ class Setting {
   String value;
   DateTime? createdAt;
   DateTime? lastUpdated;
-  String updatedBy;
+  int? updatedBy;
   Setting(this.id, this.setting, this.value, this.createdAt, this.lastUpdated,
       this.updatedBy);
 
@@ -24,7 +24,7 @@ class Setting {
       map['value'] as String,
       map['created_at'] != null ? DateTime.parse(map['created_at']) : null,
       map['last_updated'] != null ? DateTime.parse(map['last_updated']) : null,
-      map['updated_by'] ?? '',
+      map['updated_by'] as int?,
     );
   }
 }
