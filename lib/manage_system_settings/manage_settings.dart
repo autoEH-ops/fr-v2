@@ -115,7 +115,7 @@ class _ManageSettingsState extends State<ManageSettings> {
                   child: Column(
                     children: [
                       SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.2,
+                        height: MediaQuery.of(context).size.height * 0.4,
                         child: ListView.builder(
                           itemCount: systemSettings.length,
                           itemBuilder: (context, index) {
@@ -187,7 +187,13 @@ class _ManageSettingsState extends State<ManageSettings> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text("Add New System Setting"),
+              Text(
+                "Add New System Settings",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16.0,
+                ),
+              ),
               TextField(
                 controller: nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
@@ -209,7 +215,6 @@ class _ManageSettingsState extends State<ManageSettings> {
                   ElevatedButton(
                     onPressed: () {
                       _addNewSetting(nameController.text, valueController.text);
-                      Navigator.pop(context);
                     },
                     child: const Text('Submit'),
                   ),
@@ -223,13 +228,44 @@ class _ManageSettingsState extends State<ManageSettings> {
     );
   }
 
-  void _addNewSetting(String name, String value) {
+  void _addNewSetting(String name, String value) async {
     if (name.isNotEmpty && value.isNotEmpty) {
-      // Add your logic to add the new setting
-      setState(() {
-        // systemSettings.add(SystemSetting(setting: name, value: value));
-        // _controllers.add(TextEditingController(text: value));
-      });
+      try {
+        setState(() {
+          _isLoading = true;
+        });
+        Map<String, String> row = {
+          'setting': name.toLowerCase().split(' ').join('_'),
+          'value': value,
+        };
+        await dbHelper.insert('system_settings', row);
+
+        setState(() {
+          systemSettings.add(Setting(null, name, value, null, null, null));
+          _controllers.add(TextEditingController(text: value));
+        });
+
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Successfully added new system settings."),
+          ),
+        );
+      } catch (e) {
+        debugPrint("Failed to add system settings: $e");
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } else {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content:
+              Text("Please insert settings name and value before proceeding."),
+        ),
+      );
     }
   }
 }

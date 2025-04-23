@@ -256,7 +256,8 @@ class _AccountDashboardState extends State<AccountDashboard> {
                       },
                     ),
                   if (widget.account.role == 'super_admin' ||
-                      widget.account.role == 'viewer')
+                      widget.account.role == 'viewer' ||
+                      widget.account.role == 'security')
                     _buildAccessCard(
                       icon: Icons.assignment,
                       title: "Attendance Dashboard",
@@ -273,7 +274,8 @@ class _AccountDashboardState extends State<AccountDashboard> {
                       },
                     ),
                   if (widget.account.role == 'super_admin' ||
-                      widget.account.role == 'viewer')
+                      widget.account.role == 'viewer' ||
+                      widget.account.role == 'security')
                     _buildAccessCard(
                       icon: Icons.assignment,
                       title: "Admin Dashboard",

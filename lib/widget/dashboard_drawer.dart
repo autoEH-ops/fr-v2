@@ -13,6 +13,8 @@ import '../model/account.dart';
 import '../model/activity.dart';
 import '../model/setting.dart';
 import '../registration/register_attendance.dart';
+import '../request_changes/process_request.dart';
+import '../request_changes/request_changes.dart';
 
 class DashboardDrawer {
   void _navigateTo(BuildContext context, Widget routeName) {
@@ -22,15 +24,15 @@ class DashboardDrawer {
     );
   }
 
-  Drawer buildDashboardDrawer({
-    required BuildContext context,
-    required Account account,
-    required List<Setting> systemSettings,
-    required GeolocatorService geolocatorService,
-    required Future<Activity?> Function() checkEarlyCheckOut,
-    required double locationLat,
-    required double locationLong,
-  }) =>
+  Drawer buildDashboardDrawer(
+          {required BuildContext context,
+          required Account account,
+          required List<Setting> systemSettings,
+          required GeolocatorService geolocatorService,
+          required Future<Activity?> Function() checkEarlyCheckOut,
+          required double locationLat,
+          required double locationLong,
+          required double approximateRange}) =>
       Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -72,6 +74,7 @@ class DashboardDrawer {
                   final isNearby = await geolocatorService.isWithinRange(
                     targetLat: locationLat,
                     targetLng: locationLong,
+                    rangeInMeters: approximateRange,
                   );
                   if (!isNearby) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -173,6 +176,19 @@ class DashboardDrawer {
                   ),
                 ),
               ),
+            if (account.role == 'security')
+              _drawerTile(
+                  icon: Icons.read_more,
+                  label: "Request Profile Change",
+                  onTap: () =>
+                      _navigateTo(context, RequestChanges(account: account)),
+                  color: Colors.lime.shade600),
+            if (account.role == 'super_admin' || account.role == 'admin')
+              _drawerTile(
+                  icon: Icons.read_more,
+                  label: "Process Request Change",
+                  onTap: () => _navigateTo(context, ProcessRequest()),
+                  color: Colors.lime.shade600),
             _drawerTile(
               icon: Icons.logout,
               label: "Logout",

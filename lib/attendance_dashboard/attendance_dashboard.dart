@@ -32,6 +32,7 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
   late Activity? activity;
   double locationLat = 0.0;
   double locationLong = 0.0;
+  double approximateRange = 0.0;
   final GeolocatorService _geolocatorService = GeolocatorService();
   final DashboardDrawer _dashboardDrawer = DashboardDrawer();
 
@@ -41,6 +42,7 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
     loadLatestData();
     locationLat = double.parse(widget.systemSettings[0].value);
     locationLong = double.parse(widget.systemSettings[1].value);
+    approximateRange = double.parse(widget.systemSettings[2].value);
   }
 
   Future<Activity?> checkEarlyCheckOut() async {
@@ -114,7 +116,8 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
           geolocatorService: _geolocatorService,
           checkEarlyCheckOut: checkEarlyCheckOut,
           locationLat: locationLat,
-          locationLong: locationLong),
+          locationLong: locationLong,
+          approximateRange: approximateRange),
       body: isLoading
           ? Center(
               child: const CircularProgressIndicator(),

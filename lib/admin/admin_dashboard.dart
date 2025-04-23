@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 
 import '../db/supabase_db_helper.dart';
@@ -21,6 +23,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   late Activity? activity;
   double locationLat = 0.0;
   double locationLong = 0.0;
+  double approximateRange = 0.0;
   final dbHelper = SupabaseDbHelper();
   final GeolocatorService _geolocatorService = GeolocatorService();
   final DashboardDrawer _dashboardDrawer = DashboardDrawer();
@@ -30,6 +33,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     super.initState();
     locationLat = double.parse(widget.systemSettings[0].value);
     locationLong = double.parse(widget.systemSettings[1].value);
+    approximateRange = double.parse(widget.systemSettings[2].value);
   }
 
   Future<Activity?> checkEarlyCheckOut() async {
@@ -64,13 +68,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       backgroundColor: Colors.grey[50],
       drawer: _dashboardDrawer.buildDashboardDrawer(
-          context: context,
-          account: widget.account,
-          systemSettings: widget.systemSettings,
-          geolocatorService: _geolocatorService,
-          checkEarlyCheckOut: checkEarlyCheckOut,
-          locationLat: locationLat,
-          locationLong: locationLong),
+        context: context,
+        account: widget.account,
+        systemSettings: widget.systemSettings,
+        geolocatorService: _geolocatorService,
+        checkEarlyCheckOut: checkEarlyCheckOut,
+        locationLat: locationLat,
+        locationLong: locationLong,
+        approximateRange: approximateRange,
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
         child: Column(
