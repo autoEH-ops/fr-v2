@@ -187,7 +187,11 @@ class DashboardDrawer {
               _drawerTile(
                   icon: Icons.read_more,
                   label: "Process Request Change",
-                  onTap: () => _navigateTo(context, ProcessRequest()),
+                  onTap: () => _navigateTo(
+                      context,
+                      ProcessRequest(
+                        account: account,
+                      )),
                   color: Colors.lime.shade600),
             _drawerTile(
               icon: Icons.logout,

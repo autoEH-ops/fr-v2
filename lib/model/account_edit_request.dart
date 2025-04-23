@@ -22,7 +22,7 @@ class AccountEditRequest {
   factory AccountEditRequest.fromMap(Map<String, dynamic> map) {
     return AccountEditRequest(
       id: map['id'] as int?,
-      accountId: map['user_id'] as int,
+      accountId: map['account_id'] as int,
       requestedChanges: Map<String, dynamic>.from(
         map['requested_changes'] is String
             ? jsonDecode(map['requested_changes'])
