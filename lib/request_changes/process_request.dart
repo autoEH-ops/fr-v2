@@ -67,7 +67,7 @@ class _ProcessRequestState extends State<ProcessRequest> {
       _isLoadingModal = false;
     }
 
-    showDialog(
+    return showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) {
@@ -108,7 +108,8 @@ class _ProcessRequestState extends State<ProcessRequest> {
     );
   }
 
-  void _showRequestDialogPending(AccountEditRequest request) async {
+  Future<AccountEditRequest?> _showRequestDialogPending(
+      AccountEditRequest request) async {
     try {
       _isLoadingModal = true;
       final loadRequestedAccount = await requestsLogic.getRequestedAccount(
@@ -125,7 +126,7 @@ class _ProcessRequestState extends State<ProcessRequest> {
       _isLoadingModal = false;
     }
 
-    showDialog(
+    return showDialog<AccountEditRequest>(
       context: context,
       barrierDismissible: false,
       builder: (_) {
@@ -166,10 +167,6 @@ class _ProcessRequestState extends State<ProcessRequest> {
             TextButton(
               onPressed: () async {
                 _updateRequestStatus(request, "approve");
-                Navigator.of(context).pop();
-                setState(() {
-                  loadLatestData();
-                });
               },
               child: const Text("Approve"),
             ),
@@ -204,6 +201,14 @@ class _ProcessRequestState extends State<ProcessRequest> {
     } catch (e) {
       debugPrint(
           "Failed to update account and request in updateRequestStatus: $e");
+    } finally {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Account updated. Updated photo will take time to process and take effect')),
+      );
+
+      Navigator.pop(context, request);
     }
   }
 
@@ -251,7 +256,12 @@ class _ProcessRequestState extends State<ProcessRequest> {
                         'Tap to ${r.requestStatus == "pending" ? "review" : "view"}'),
                     trailing:
                         Icon(Icons.arrow_forward_ios, size: 16, color: color),
-                    onTap: () => onTap(r),
+                    onTap: () async {
+                      final result = await _showRequestDialogPending(r);
+                      if (result != null) {
+                        await loadLatestData();
+                      }
+                    },
                   ),
                 )),
           const SizedBox(height: 16),

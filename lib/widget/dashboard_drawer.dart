@@ -176,7 +176,7 @@ class DashboardDrawer {
                   ),
                 ),
               ),
-            if (account.role == 'security')
+            if (account.role == 'security' || account.role == "super_admin")
               _drawerTile(
                   icon: Icons.read_more,
                   label: "Request Profile Change",
