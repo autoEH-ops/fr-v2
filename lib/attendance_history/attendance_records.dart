@@ -17,6 +17,12 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
   final RecordsLogic recordsLogic = RecordsLogic();
   List<Attendance> attendances = [];
+  Map<String, int> attendanceStats = {
+    "Fine": 0,
+    "Late": 0,
+    "Absent": 0,
+    "Left Early": 0,
+  };
   bool _isLoading = true;
 
   @override
@@ -26,10 +32,15 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
   }
 
   Future<void> loadLatestData() async {
-    final loadAttendances =
-        await recordsLogic.getAllAttendance(dbHelper, widget.account);
+    final loadAttendances = await recordsLogic.getAllAttendanceCurrentMonth(
+        dbHelper, widget.account);
     setState(() {
       attendances = loadAttendances;
+      attendanceStats = recordsLogic.getAttendanceStatistics(
+          attendances,
+          DateTime.now().year.toInt(),
+          DateTime.now().month.toInt(),
+          widget.account);
       _isLoading = false;
     });
   }
@@ -39,101 +50,173 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
     final groupedAttendances = recordsLogic.groupAttendancesByDate(attendances);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Attendance History'),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 1,
-        foregroundColor: Colors.black87,
-      ),
       body: _isLoading
           ? Center(child: const CircularProgressIndicator())
           : attendances.isEmpty
               ? const Center(
                   child: Text("No attendances found."),
                 )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: groupedAttendances.length,
-                  itemBuilder: (context, index) {
-                    final entry = groupedAttendances.entries.elementAt(index);
-                    final checkIn = entry.value['check_in'];
-                    final checkOut = entry.value['check_out'];
+              : Column(
+                  children: [
+                    Text(
+                      recordsLogic.formatMonthAndYear(),
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _buildStatCard('Fine', attendanceStats["Fine"] ?? -5,
+                              Colors.green),
+                          _buildStatCard('Late', attendanceStats["Late"] ?? -5,
+                              Colors.orange),
+                          _buildStatCard('Absent',
+                              attendanceStats["Absent"] ?? -5, Colors.red),
+                          _buildStatCard(
+                              'Left Early',
+                              attendanceStats["Left Early"] ?? -5,
+                              Colors.purple),
+                        ],
+                      ),
+                    ),
+                    // Attendance List
 
-                    final dateTimeInfo =
-                        recordsLogic.formatAttendanceTime(checkIn, checkOut);
+                    Text(
+                      "Attendance List",
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                    Expanded(
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: groupedAttendances.length,
+                        itemBuilder: (context, index) {
+                          final entry =
+                              groupedAttendances.entries.elementAt(index);
+                          final checkIn = entry.value['check_in'];
+                          final checkOut = entry.value['check_out'];
 
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      elevation: 3,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16, horizontal: 12),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Colored Day+Month box
-                            Container(
+                          final dateTimeInfo = recordsLogic
+                              .formatAttendanceTime(checkIn, checkOut);
+
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16)),
+                            elevation: 3,
+                            child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 12, horizontal: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade100,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Column(
+                                  vertical: 16, horizontal: 12),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    "${dateTimeInfo['day']}",
-                                    style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
+                                  // Colored Day+Month box
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12, horizontal: 16),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.shade100,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Column(
+                                      children: [
+                                        Text(
+                                          "${dateTimeInfo['day']}",
+                                          style: const TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                        Text(
+                                          "${dateTimeInfo['month']}",
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.blueAccent,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  Text(
-                                    "${dateTimeInfo['month']}",
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.blueAccent,
-                                    ),
+
+                                  // Check In
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Check In',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.green)),
+                                      const SizedBox(height: 4),
+                                      Text("${dateTimeInfo["checkIn"]}"),
+                                    ],
+                                  ),
+
+                                  // Check Out
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text('Check Out',
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.red)),
+                                      const SizedBox(height: 4),
+                                      Text("${dateTimeInfo["checkOut"]}"),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-
-                            // Check In
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Check In',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.green)),
-                                const SizedBox(height: 4),
-                                Text("${dateTimeInfo["checkIn"]}"),
-                              ],
-                            ),
-
-                            // Check Out
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Check Out',
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red)),
-                                const SizedBox(height: 4),
-                                Text("${dateTimeInfo["checkOut"]}"),
-                              ],
-                            ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
+    );
+  }
+
+  Widget _buildStatCard(String title, int count, Color baseColor) {
+    final Color bgColor = baseColor;
+    final Color textColor = Colors.white;
+
+    return Expanded(
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: bgColor,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "$count",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

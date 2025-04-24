@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
@@ -33,6 +34,23 @@ class RequestChangesLogic {
     return requestAccount;
   }
 
+  Future<List<AccountEditRequest>> getAccountRequests(
+      {required SupabaseDbHelper dbHelper, required Account account}) async {
+    List<AccountEditRequest> requests = [];
+    try {
+      final response = await dbHelper.getRowsWhereField<AccountEditRequest>(
+          'account_edit_requests',
+          'account_id',
+          account.id,
+          (row) => AccountEditRequest.fromMap(row));
+      requests = response;
+    } catch (e) {
+      debugPrint("Failed to get account: $e");
+    }
+
+    return requests;
+  }
+
   Future<void> updateAccount({
     required SupabaseDbHelper dbHelper,
     required AccountEditRequest request,
@@ -62,5 +80,15 @@ class RequestChangesLogic {
     } catch (e) {
       debugPrint("Failed to update requese: $e");
     }
+  }
+
+  String readableString(String word) {
+    return word[0].toUpperCase() + word.substring(1).toLowerCase();
+  }
+
+  String formatTime(DateTime time) {
+    final malaysiaTime = time.add(Duration(hours: 8));
+    final formatter = DateFormat('dd MMMM yyyy - hh:mm a');
+    return formatter.format(malaysiaTime);
   }
 }

@@ -5,7 +5,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
-import '../model/account_edit_request.dart';
 import 'request_changes_logic.dart';
 
 class RequestChanges extends StatefulWidget {
@@ -85,7 +84,7 @@ class _RequestChangesState extends State<RequestChanges> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Account')),
+      appBar: AppBar(title: const Text('Request Profile Change')),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(

@@ -36,6 +36,7 @@ class LoginService {
         return null;
       }
       String otp = generateSixDigitOTP().toString();
+      debugPrint("This is the OTP: $otp");
       sendMessage(otp, matchingAccount.phone);
       sendEmail(matchingAccount.email, otp);
       await updateOTP(matchingAccount.id!, otp);

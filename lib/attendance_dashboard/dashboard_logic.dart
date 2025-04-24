@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
@@ -65,5 +66,11 @@ class DashboardLogic {
     } catch (e) {
       return null;
     }
+  }
+
+  String formatTime(DateTime time) {
+    final malaysiaTime = time.add(Duration(hours: 8));
+    final formatter = DateFormat('hh:mm a');
+    return formatter.format(malaysiaTime);
   }
 }

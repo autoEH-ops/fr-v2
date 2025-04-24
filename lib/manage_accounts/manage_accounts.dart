@@ -102,13 +102,6 @@ class _ManageAccountsState extends State<ManageAccounts> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Accounts'),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
-      ),
       body: _isLoading
           ? Center(child: const CircularProgressIndicator())
           : accounts.isEmpty

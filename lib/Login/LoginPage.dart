@@ -1,7 +1,7 @@
-import 'package:created_by_618_abdo/account_dashboard.dart';
 import 'package:created_by_618_abdo/model/setting.dart';
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import '../attendance_dashboard/attendance_dashboard.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '/Login/LoginService.dart';
@@ -78,7 +78,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-            builder: (context) => AccountDashboard(
+            builder: (context) => AttendanceDashboard(
                 account: account, systemSettings: systemSettings)),
       );
       loginService.updateOTP(account.id!, "");

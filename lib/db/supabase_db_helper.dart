@@ -204,6 +204,33 @@ class SupabaseDbHelper {
     }
   }
 
+  Future<List<T>> getRowsWhereFieldForCurrentMonth<T>({
+    required String table,
+    required String fieldName,
+    required dynamic fieldValue,
+    required String dateTimeField, // e.g., 'activity_time'
+    required T Function(Map<String, dynamic>) fromMap,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final startOfNextMonth = DateTime(now.year, now.month + 1, 1);
+
+      final response = await supabase
+          .from(table)
+          .select()
+          .eq(fieldName, fieldValue)
+          .gte(dateTimeField, startOfMonth.toIso8601String())
+          .lt(dateTimeField, startOfNextMonth.toIso8601String());
+
+      return (response as List)
+          .map((row) => fromMap(row as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> insertIntoBucket(String filePath, Uint8List imageBytes) async {
     try {
       await supabase.storage.from('images').uploadBinary(filePath, imageBytes);

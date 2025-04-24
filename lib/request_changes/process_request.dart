@@ -73,7 +73,7 @@ class _ProcessRequestState extends State<ProcessRequest> {
       builder: (_) {
         return AlertDialog(
           title: Text(
-              'Request #${request.id} (${request.requestStatus.toUpperCase()})'),
+              'Request ${request.id} (${requestsLogic.readableString(request.requestStatus)})'),
           content: SingleChildScrollView(
             child: _isLoadingModal
                 ? const Center(child: CircularProgressIndicator())
@@ -132,7 +132,7 @@ class _ProcessRequestState extends State<ProcessRequest> {
       builder: (_) {
         return AlertDialog(
           title: Text(
-              'Request #${request.id} (${request.requestStatus.toUpperCase()})'),
+              'Request ${request.id} (${requestsLogic.readableString(request.requestStatus)})'),
           content: SingleChildScrollView(
             child: _isLoadingModal
                 ? const Center(child: CircularProgressIndicator())
@@ -173,7 +173,6 @@ class _ProcessRequestState extends State<ProcessRequest> {
             TextButton(
               onPressed: () async {
                 _updateRequestStatus(request, "reject");
-                Navigator.of(context).pop();
               },
               child: const Text("Reject"),
             ),
@@ -203,9 +202,7 @@ class _ProcessRequestState extends State<ProcessRequest> {
           "Failed to update account and request in updateRequestStatus: $e");
     } finally {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Account updated. Updated photo will take time to process and take effect')),
+        const SnackBar(content: Text('Account updated.')),
       );
 
       Navigator.pop(context, request);
@@ -251,15 +248,19 @@ class _ProcessRequestState extends State<ProcessRequest> {
                       child: Text(r.requestStatus[0].toUpperCase(),
                           style: const TextStyle(color: Colors.white)),
                     ),
-                    title: Text('Request #${r.id ?? "-"}'),
+                    title: Text('Request ${r.id ?? "-"}'),
                     subtitle: Text(
                         'Tap to ${r.requestStatus == "pending" ? "review" : "view"}'),
                     trailing:
                         Icon(Icons.arrow_forward_ios, size: 16, color: color),
                     onTap: () async {
-                      final result = await _showRequestDialogPending(r);
-                      if (result != null) {
-                        await loadLatestData();
+                      if (r.requestStatus == 'pending') {
+                        final result = await _showRequestDialogPending(r);
+                        if (result != null) {
+                          await loadLatestData();
+                        }
+                      } else {
+                        _showRequestDialog(r);
                       }
                     },
                   ),
@@ -270,7 +271,7 @@ class _ProcessRequestState extends State<ProcessRequest> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Process Edit Requests')),
+      appBar: AppBar(title: const Text('Approval')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : requests.isEmpty

@@ -1,6 +1,7 @@
 import 'package:created_by_618_abdo/attendance_history/attendance_records.dart';
+import 'package:created_by_618_abdo/manage_accounts/manage_accounts.dart';
+import 'package:created_by_618_abdo/request_changes/request_changes.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // For formatting date/time
 import '../activity_logs/activity_logs.dart';
 import '../db/supabase_db_helper.dart';
 import '../geolocator/geolocator_service.dart';
@@ -9,6 +10,7 @@ import '../model/activity.dart';
 import '../model/attendance.dart';
 import '../model/setting.dart';
 import '../widget/dashboard_drawer.dart';
+import '../widget/fab.dart';
 import 'dashboard_logic.dart';
 
 class AttendanceDashboard extends StatefulWidget {
@@ -22,19 +24,38 @@ class AttendanceDashboard extends StatefulWidget {
 }
 
 class _AttendanceDashboardState extends State<AttendanceDashboard> {
+  final PageController _pageController = PageController();
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+      _appBarTitle = _pageTitles[index];
+    });
+    _pageController.jumpToPage(index);
+  }
+
   final DashboardLogic dashboardLogic = DashboardLogic();
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
   Attendance? latestAttendance;
   Activity? latestActivity;
-  // Activity? checkOutEarly;
-  // Activity? isLate;
+  Activity? checkOutEarly;
+  Activity? isLate;
   bool isLoading = true;
+  String _appBarTitle = "Attendance Dashboard";
+  final List<String> _pageTitles = [
+    'Attendance Dashboard',
+    'Attendance Records',
+    'Daily Logs',
+    'Manage Accounts',
+  ];
   late Activity? activity;
   double locationLat = 0.0;
   double locationLong = 0.0;
   double approximateRange = 0.0;
   final GeolocatorService _geolocatorService = GeolocatorService();
   final DashboardDrawer _dashboardDrawer = DashboardDrawer();
+  final Fab _fab = Fab();
 
   @override
   void initState() {
@@ -51,8 +72,9 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
     return activity;
   }
 
-  String statusLogic(Attendance attendance) {
-    final status = attendance.attendanceStatus;
+  String statusLogic(Attendance? attendance) {
+    String status = attendance!.attendanceStatus;
+
     if (status == "check_in") {
       return "Check In";
     }
@@ -60,7 +82,8 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
   }
 
   String activityLogic(Attendance attendance, Activity activity) {
-    final status = attendance.attendanceStatus;
+    String status = attendance.attendanceStatus;
+
     if (status == "check_out") {
       return "-";
     }
@@ -92,8 +115,8 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
     setState(() {
       latestAttendance = attendance;
       latestActivity = activity;
-      // checkOutEarly = activityMessage;
-      // isLate = checkLate;
+      checkOutEarly = activityMessage;
+      isLate = checkLate;
       isLoading = false;
     });
   }
@@ -103,7 +126,7 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
-        title: const Text('Attendance Dashboard'),
+        title: Text(_appBarTitle),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 1,
@@ -118,166 +141,195 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
           locationLat: locationLat,
           locationLong: locationLong,
           approximateRange: approximateRange),
+      floatingActionButton: _fab.buildFab(
+          context: context,
+          systemSettings: widget.systemSettings,
+          geolocatorService: _geolocatorService,
+          checkEarlyCheckOut: checkEarlyCheckOut,
+          locationLat: locationLat,
+          locationLong: locationLong,
+          approximateRange: approximateRange),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        elevation: 12,
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.home_rounded,
+                  size: 28,
+                  color: _selectedIndex == 0
+                      ? Colors.indigo
+                      : Colors.grey.shade400,
+                ),
+                onPressed: () => _onItemTapped(0),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.fact_check_rounded,
+                  size: 28,
+                  color: _selectedIndex == 1
+                      ? Colors.indigo
+                      : Colors.grey.shade400,
+                ),
+                onPressed: () => _onItemTapped(1),
+              ),
+              const SizedBox(
+                width: 26,
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.today,
+                  size: 28,
+                  color: _selectedIndex == 2
+                      ? Colors.indigo
+                      : Colors.grey.shade400,
+                ),
+                onPressed: () => _onItemTapped(2),
+              ),
+              IconButton(
+                icon: Icon(
+                  widget.account.role == 'super_admin' ||
+                          widget.account.role == 'super_admin'
+                      ? Icons.manage_accounts_rounded
+                      : Icons.assignment,
+                  size: 28,
+                  color: _selectedIndex == 3
+                      ? Colors.indigo
+                      : Colors.grey.shade400,
+                ),
+                onPressed: () => _onItemTapped(3),
+              ),
+            ],
+          ),
+        ),
+      ),
       body: isLoading
           ? Center(
               child: const CircularProgressIndicator(),
             )
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Profile Section
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black12,
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 45,
-                          backgroundColor: Colors.indigo.shade600,
-                          backgroundImage: widget.account.imageUrl != null
-                              ? NetworkImage(widget.account.imageUrl!)
-                              : null,
-                          child: widget.account.imageUrl == null
-                              ? Text(
-                                  widget.account.name[0].toUpperCase(),
-                                  style: const TextStyle(
-                                    fontSize: 40,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : null,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          widget.account.name,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          roleReadableFormat(widget.account.role),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Column(
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.email, color: Colors.grey),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      widget.account.email,
-                                      style: const TextStyle(fontSize: 15),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  const Icon(Icons.phone, color: Colors.grey),
-                                  const SizedBox(width: 8),
-                                  Flexible(
-                                    child: Text(
-                                      widget.account.phone,
-                                      style: const TextStyle(fontSize: 15),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        )
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 40),
-                  // Status and Activity Container
-                  _buildStatus(),
-                  // Remarks Section
-                  // if (checkOutEarly != null || isLate != null) _buildRemarks(),
-                  // Action Buttons
-                  Row(
+          : PageView(
+              controller: _pageController,
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Navigate to Attendance History
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) => AttendanceRecords(
-                                        account: widget.account)));
-                          },
-                          icon: const Icon(
-                            Icons.fact_check,
-                            color: Colors.white,
-                          ),
-                          label: const Text("History"),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                      // Profile Section
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 24),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black12,
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
-                            backgroundColor: Colors.indigo.shade600,
-                            foregroundColor: Colors.white,
-                            elevation: 4,
-                          ),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 45,
+                              backgroundColor: Colors.indigo.shade600,
+                              backgroundImage: widget.account.imageUrl != null
+                                  ? NetworkImage(widget.account.imageUrl!)
+                                  : null,
+                              child: widget.account.imageUrl == null
+                                  ? Text(
+                                      widget.account.name[0].toUpperCase(),
+                                      style: const TextStyle(
+                                        fontSize: 40,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              widget.account.name,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              roleReadableFormat(widget.account.role),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.email,
+                                          color: Colors.grey),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          widget.account.email,
+                                          style: const TextStyle(fontSize: 15),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.phone,
+                                          color: Colors.grey),
+                                      const SizedBox(width: 8),
+                                      Flexible(
+                                        child: Text(
+                                          widget.account.phone,
+                                          style: const TextStyle(fontSize: 15),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            )
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 20),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Navigate to Daily Activity
-                            Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (_) =>
-                                        ActivityLogs(account: widget.account)));
-                          },
-                          icon: const Icon(
-                            Icons.today,
-                            color: Colors.white,
-                          ),
-                          label: const Text("Activity"),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            backgroundColor: Colors.teal.shade500,
-                            foregroundColor: Colors.white,
-                            elevation: 4,
-                          ),
-                        ),
-                      ),
+
+                      const SizedBox(height: 40),
+                      // Status and Activity Container
+                      _buildStatus(),
+                      // Remarks Section
+                      if (checkOutEarly != null || isLate != null)
+                        _buildRemarks(),
                     ],
                   ),
-                ],
-              ),
+                ),
+                AttendanceRecords(account: widget.account),
+                ActivityLogs(account: widget.account),
+                widget.account.role == 'super_admin' ||
+                        widget.account.role == 'super_admin'
+                    ? ManageAccounts(
+                        account: widget.account,
+                        systemSettings: widget.systemSettings)
+                    : RequestChanges(account: widget.account)
+              ],
             ),
     );
   }
@@ -297,53 +349,55 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
             ),
           ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Status",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
+        child: latestAttendance != null && latestActivity != null
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Status",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "${statusLogic(latestAttendance)}",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: statusColor(latestAttendance!),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  "${statusLogic(latestAttendance!)}",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: statusColor(latestAttendance!),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Activity",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        activityLogic(latestAttendance!, latestActivity!),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Activity",
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  activityLogic(latestAttendance!, latestActivity!),
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+                ],
+              )
+            : Center(child: Text("Please check in first.")),
       );
 
   Widget _buildRemarks() => Container(
@@ -372,44 +426,43 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
               ),
             ),
             const SizedBox(height: 8),
-            // if (checkOutEarly != null)
-            Text(
-              "Given Reason (Checking Out Early): ", // Function to return message
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+            if (isLate != null)
+              Text(
+                "Late: ", // Function to return message
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-            // if (checkOutEarly != null)
-            Text(
-              "",
-              // "${checkOutEarly?.message!}", // Function to return message
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+            if (isLate != null)
+              Text(
+                "Check in on ${dashboardLogic.formatTime(isLate!.activityTime!)}",
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-            // if (isLate != null)
-            Text(
-              "Late:", // Function to return message
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+            const SizedBox(height: 8),
+            if (checkOutEarly != null)
+              Text(
+                "Checking Out Early: ", // Function to return message
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
-            ),
-            // if (isLate != null)
-            Text(
-              "",
-              // "${isLate?.message!}", // Function to return message
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: Colors.black87,
+            if (checkOutEarly != null)
+              Text(
+                "Reasoning - ${checkOutEarly!.message}", // Function to return message
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
               ),
-            ),
           ],
         ),
       );

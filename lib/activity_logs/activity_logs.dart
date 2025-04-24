@@ -42,13 +42,6 @@ class _ActivityLogsState extends State<ActivityLogs> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Activity Logs'),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
-        elevation: 1,
-      ),
       body: _isLoading
           ? Center(child: const CircularProgressIndicator())
           : activities.isEmpty
