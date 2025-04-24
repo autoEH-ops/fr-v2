@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
+import '../Login/LoginPage.dart';
 import '../account_dashboard.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/recognition.dart';
@@ -14,10 +15,9 @@ import '../model/account.dart';
 import '../attendance_dashboard/recognizer.dart';
 
 class RegisterAttendance extends StatefulWidget {
-  final Account account;
-  final List<Setting> systemSettings;
-  const RegisterAttendance(
-      {super.key, required this.account, required this.systemSettings});
+  final Account? account;
+  final List<Setting>? systemSettings;
+  const RegisterAttendance({super.key, this.account, this.systemSettings});
 
   @override
   State<RegisterAttendance> createState() => _RegisterAttendanceState();
@@ -237,11 +237,15 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                         Navigator.of(context).pop(); // Close dialog
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                              builder: (context) => AccountDashboard(
-                                    account: widget.account,
-                                    systemSettings: widget.systemSettings,
-                                  )),
+                          widget.account != null &&
+                                  widget.systemSettings != null
+                              ? MaterialPageRoute(
+                                  builder: (context) => AccountDashboard(
+                                        account: widget.account!,
+                                        systemSettings: widget.systemSettings!,
+                                      ))
+                              : MaterialPageRoute(
+                                  builder: (context) => LoginPage()),
                         );
                       } catch (e) {
                         debugPrint("Registration error: $e");

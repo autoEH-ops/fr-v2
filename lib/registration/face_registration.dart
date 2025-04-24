@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
 
+import '../Login/LoginPage.dart';
 import '../main.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
@@ -16,9 +17,9 @@ import '../model/setting.dart';
 
 class FaceRegistration extends StatefulWidget {
   final Account account;
-  final List<Setting> systemSettings;
+  final List<Setting>? systemSettings;
   const FaceRegistration(
-      {super.key, required this.account, required this.systemSettings});
+      {super.key, required this.account, this.systemSettings});
 
   @override
   State<FaceRegistration> createState() => _FaceRegistrationState();
@@ -232,11 +233,13 @@ class _FaceRegistrationState extends State<FaceRegistration> {
                         }
                         Navigator.of(context).pop(); // Close dialog
                         Navigator.of(context).pop(); // Go back
-                        Navigator.of(context).push(MaterialPageRoute(
-                            builder: (context) => AttendanceDashboard(
-                                  account: newAccount!,
-                                  systemSettings: widget.systemSettings,
-                                )));
+                        Navigator.of(context).push(widget.systemSettings != null
+                            ? MaterialPageRoute(
+                                builder: (context) => AttendanceDashboard(
+                                      account: newAccount!,
+                                      systemSettings: widget.systemSettings!,
+                                    ))
+                            : MaterialPageRoute(builder: (_) => LoginPage()));
                       } catch (e) {
                         debugPrint("Registration error: $e");
                         ScaffoldMessenger.of(context).showSnackBar(

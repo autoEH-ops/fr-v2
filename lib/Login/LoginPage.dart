@@ -4,6 +4,7 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import '../attendance_dashboard/attendance_dashboard.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
+import '../registration/register_attendance.dart';
 import '/Login/LoginService.dart';
 
 class LoginPage extends StatefulWidget {
@@ -147,74 +148,94 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
-    double containerWidth = screenWidth < 600
-        ? screenWidth * 0.9
-        : 400; // Responsive container width
+    double containerWidth = screenWidth < 600 ? screenWidth * 0.9 : 400;
 
     return Scaffold(
-      backgroundColor: Colors.lightBlueAccent, // Bright blue background
-      body: Stack(
-        children: [
-          // Optional: Remove or adjust the starry background
-          // _buildStarryBackground(),
-          SafeArea(
-            child: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Attendance with Face Recognition",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize:
-                            screenWidth < 600 ? 32 : 40, // Responsive font size
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 40),
-                    Container(
-                      padding: const EdgeInsets.all(20.0),
-                      width: containerWidth,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10.0),
-                        border: Border.all(color: Colors.white, width: 2.0),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const SizedBox(height: 20),
-                          _buildEmailPhoneToggle(),
-                          const SizedBox(height: 20),
-                          isEmailSelected
-                              ? _buildEmailField()
-                              : _buildPhoneField(),
-                          const SizedBox(height: 30),
-                          _buildRequestOtpButton(), // Updated button
-                        ],
-                      ),
-                    ),
-                    const SizedBox(
-                        height: 10), // Add some space before the copyright text
-                    Text(
-                      "Copyright (v3)",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize:
-                            screenWidth < 400 ? 20 : 10, // Responsive font size
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Attendance with Face Recognition",
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: screenWidth < 600 ? 30 : 36,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
+                const SizedBox(height: 40),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  width: containerWidth,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildEmailPhoneToggle(),
+                      const SizedBox(height: 20),
+                      isEmailSelected ? _buildEmailField() : _buildPhoneField(),
+                      const SizedBox(height: 30),
+                      _buildRequestOtpButton(),
+                      const SizedBox(height: 10),
+                      _buildRegisterButton(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  "© 2025 Smart Attendance",
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontSize: screenWidth < 400 ? 12 : 10,
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRegisterButton() {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton(
+        onPressed: () {
+          // Navigate to register screen
+          Navigator.push(
+              context, MaterialPageRoute(builder: (_) => RegisterAttendance()));
+        },
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: Colors.blueAccent),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 15),
+        ),
+        child: const Text(
+          "Register",
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.blueAccent,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
     );
   }
