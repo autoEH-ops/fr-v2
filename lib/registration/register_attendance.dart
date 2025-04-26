@@ -224,6 +224,14 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                         if (widget.isGuest) {
                           await guestLogic.insertRegisterAccountRequests(
                               dbHelper: dbHelper, row: row);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text("Please wait for admin approval."),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: Colors.green,
+                          ));
+                          Navigator.pop(context);
+                          Navigator.pop(context);
+                          Navigator.pop(context);
                         } else {
                           await dbHelper.insert('accounts', row);
                           final newAccount =

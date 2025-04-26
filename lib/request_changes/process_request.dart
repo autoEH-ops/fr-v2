@@ -81,31 +81,9 @@ class _ProcessRequestState extends State<ProcessRequest> {
                 ? const Center(child: CircularProgressIndicator())
                 : requestedAccount == null
                     ? const Center(child: Text("Account does not exist"))
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                              child: _buildUserAvatar(
-                                  requestedAccount!.imageUrl,
-                                  requestedAccount!.name)),
-                          const SizedBox(height: 16),
-                          const Text("Request:",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          if (request.requestedChanges.containsKey('image_url'))
-                            _buildUserAvatar(
-                                request.requestedChanges['image_url'],
-                                request.requestedChanges['name']),
-                          if (request.requestedChanges.containsKey('image_url'))
-                            Text("Requested changes in profile picture"),
-                          const SizedBox(height: 6),
-                          ...request.requestedChanges.entries
-                              .where((entry) => entry.key != 'image_url')
-                              .map((e) => Text(
-                                  "${e.key.toString()[0].toUpperCase() + e.key.toString().substring(1).toLowerCase()}: ${e.value}")),
-                          if (request.requestedChanges.isEmpty)
-                            const Text("No changes specified."),
-                        ],
-                      ),
+                    : request.requestCategory == 'register_account'
+                        ? _buildRegisterRequestUI(request)
+                        : _buildEditRequestUI(request),
           ),
           actions: [
             TextButton(
@@ -135,73 +113,77 @@ class _ProcessRequestState extends State<ProcessRequest> {
       _isLoadingModal = false;
     }
 
-    return showDialog<Request>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) {
-        return AlertDialog(
-          title: Text(
-              'Request ${request.id} (${requestsLogic.readableString(request.requestStatus)})'),
-          content: SingleChildScrollView(
-            child: _isLoadingModal
-                ? const Center(child: CircularProgressIndicator())
-                : requestedAccount == null
-                    ? const Center(child: Text("Account does not exist"))
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                              child: _buildUserAvatar(
-                                  requestedAccount!.imageUrl,
-                                  requestedAccount!.name)),
-                          const SizedBox(height: 16),
-                          const Text("Before:",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 6),
-                          Text("Name: ${requestedAccount!.name}"),
-                          Text("Email: ${requestedAccount!.email}"),
-                          Text("Phone: ${requestedAccount!.phone}"),
-                          const SizedBox(height: 16),
-                          if (request.requestedChanges.containsKey('image_url'))
-                            _buildUserAvatar(
-                                request.requestedChanges['image_url'],
-                                request.requestedChanges['name']),
-                          if (request.requestedChanges.containsKey('image_url'))
-                            const Text("Requested changes in profile picture",
-                                style: TextStyle(fontStyle: FontStyle.italic)),
-                          const SizedBox(height: 6),
-                          const Text("After:",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          ...request.requestedChanges.entries
-                              .where((entry) => entry.key != 'image_url')
-                              .map((e) => Text(
-                                  "${e.key.toString()[0].toUpperCase() + e.key.toString().substring(1).toLowerCase()}: ${e.value}")),
-                          if (request.requestedChanges.isEmpty)
-                            const Text("No changes specified."),
-                        ],
-                      ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () async {
-                _updateRequestStatus(request, "approve");
-              },
-              child: const Text("Approve"),
+    if (request.requestCategory == 'register_account') {
+      // Show Register Request Dialog
+      return showDialog<Request>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) {
+          return AlertDialog(
+            title: Text('New Account Registration (Request ${request.id})'),
+            content: SingleChildScrollView(
+              child: _isLoadingModal
+                  ? const Center(child: CircularProgressIndicator())
+                  : _buildRegisterRequestUI(request),
             ),
-            TextButton(
-              onPressed: () async {
-                _updateRequestStatus(request, "reject");
-              },
-              child: const Text("Reject"),
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  _updateRequestStatus(request, "approve");
+                },
+                child: const Text("Approve Registration"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  _updateRequestStatus(request, "reject");
+                },
+                child: const Text("Reject Registration"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text("Close"),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      // Show Edit Request Dialog
+      return showDialog<Request>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) {
+          return AlertDialog(
+            title: Text('Edit Account Request (Request ${request.id})'),
+            content: SingleChildScrollView(
+              child: _isLoadingModal
+                  ? const Center(child: CircularProgressIndicator())
+                  : requestedAccount == null
+                      ? const Center(child: Text("Account does not exist"))
+                      : _buildEditRequestUI(request),
             ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text("Close"),
-            ),
-          ],
-        );
-      },
-    );
+            actions: [
+              TextButton(
+                onPressed: () async {
+                  _updateRequestStatus(request, "approve");
+                },
+                child: const Text("Approve Changes"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  _updateRequestStatus(request, "reject");
+                },
+                child: const Text("Reject Changes"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text("Close"),
+              ),
+            ],
+          );
+        },
+      );
+    }
   }
 
   Future<void> _updateRequestStatus(Request request, String action) async {
@@ -250,6 +232,49 @@ class _ProcessRequestState extends State<ProcessRequest> {
 
       Navigator.pop(context, request);
     }
+  }
+
+  Widget _buildEditRequestUI(Request request) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Center(
+            child: _buildUserAvatar(
+                requestedAccount!.imageUrl, requestedAccount!.name)),
+        const SizedBox(height: 16),
+        const Text("Request:", style: TextStyle(fontWeight: FontWeight.bold)),
+        if (request.requestedChanges.containsKey('image_url'))
+          _buildUserAvatar(request.requestedChanges['image_url'],
+              request.requestedChanges['name']),
+        if (request.requestedChanges.containsKey('image_url'))
+          Text("Requested changes in profile picture"),
+        const SizedBox(height: 6),
+        ...request.requestedChanges.entries
+            .where((entry) => entry.key != 'image_url')
+            .map((e) => Text(
+                "${e.key.toString()[0].toUpperCase() + e.key.toString().substring(1).toLowerCase()}: ${e.value}")),
+        if (request.requestedChanges.isEmpty)
+          const Text("No changes specified."),
+      ],
+    );
+  }
+
+  Widget _buildRegisterRequestUI(Request request) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("New Account Registration:",
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        _buildUserAvatar(request.requestedChanges['image_url'],
+            request.requestedChanges['name']),
+        const SizedBox(height: 12),
+        ...request.requestedChanges.entries
+            .where((entry) => entry.key != 'embeddings')
+            .map((e) => Text(
+                "${e.key[0].toUpperCase()}${e.key.substring(1)}: ${e.value}")),
+      ],
+    );
   }
 
   @override
