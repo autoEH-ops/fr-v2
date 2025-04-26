@@ -219,7 +219,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
         onPressed: () {
           // Navigate to register screen
           Navigator.push(
-              context, MaterialPageRoute(builder: (_) => RegisterAttendance()));
+              context,
+              MaterialPageRoute(
+                  builder: (_) => RegisterAttendance(
+                        isGuest: true,
+                      )));
         },
         style: OutlinedButton.styleFrom(
           side: const BorderSide(color: Colors.blueAccent),

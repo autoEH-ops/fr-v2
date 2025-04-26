@@ -143,26 +143,16 @@ class Recognizer {
   }
 
   Recognition recognize(img.Image image, Rect location) {
-    //TODO crop face from image resize it and convert it to float array
     var input = imageToArray(image);
-    print(input.shape.toString());
 
-    //TODO output array
     List output = List.filled(1 * 192, 0).reshape([1, 192]);
 
-    //TODO performs inference
-    final runs = DateTime.now().millisecondsSinceEpoch;
     interpreter.run(input, output);
-    final run = DateTime.now().millisecondsSinceEpoch - runs;
-    print('Time to run inference: $run ms$output');
 
-    //TODO convert dynamic list to double list
     List<double> outputArray = output.first.cast<double>();
 
-    //TODO looks for the nearest embeeding in the database and returns the pair
     Pair pair = findNearest(outputArray);
-    print("distance= ${pair.distance}");
-
+    debugPrint("pair name: ${pair.name}");
     return Recognition(pair.name, location, outputArray, pair.distance);
   }
 

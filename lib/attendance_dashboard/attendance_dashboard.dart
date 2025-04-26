@@ -1,14 +1,14 @@
 import 'package:created_by_618_abdo/attendance_history/attendance_records.dart';
-import 'package:created_by_618_abdo/manage_accounts/manage_accounts.dart';
-import 'package:created_by_618_abdo/request_changes/request_changes.dart';
 import 'package:flutter/material.dart';
 import '../activity_logs/activity_logs.dart';
+import '../admin/admin_dashboard.dart';
 import '../db/supabase_db_helper.dart';
 import '../geolocator/geolocator_service.dart';
 import '../model/account.dart';
 import '../model/activity.dart';
 import '../model/attendance.dart';
 import '../model/setting.dart';
+import '../request_changes/request_status.dart';
 import '../widget/dashboard_drawer.dart';
 import '../widget/fab.dart';
 import 'dashboard_logic.dart';
@@ -26,11 +26,11 @@ class AttendanceDashboard extends StatefulWidget {
 class _AttendanceDashboardState extends State<AttendanceDashboard> {
   final PageController _pageController = PageController();
   int _selectedIndex = 0;
-
+  List<String> pageTitles = [];
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      _appBarTitle = _pageTitles[index];
+      _appBarTitle = pageTitles[index];
     });
     _pageController.jumpToPage(index);
   }
@@ -43,12 +43,14 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
   Activity? isLate;
   bool isLoading = true;
   String _appBarTitle = "Attendance Dashboard";
-  final List<String> _pageTitles = [
-    'Attendance Dashboard',
-    'Attendance Records',
-    'Daily Logs',
-    'Manage Accounts',
-  ];
+  String conditionalTitle() {
+    if (widget.account.role == "super_admin" ||
+        widget.account.role == "admin") {
+      return "View Employee Activity";
+    }
+    return "Approval";
+  }
+
   late Activity? activity;
   double locationLat = 0.0;
   double locationLong = 0.0;
@@ -60,6 +62,12 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
   @override
   void initState() {
     super.initState();
+    pageTitles = [
+      'Attendance Dashboard',
+      'Attendance Records',
+      'Daily Logs',
+      conditionalTitle()
+    ];
     loadLatestData();
     locationLat = double.parse(widget.systemSettings[0].value);
     locationLong = double.parse(widget.systemSettings[1].value);
@@ -148,7 +156,8 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
           checkEarlyCheckOut: checkEarlyCheckOut,
           locationLat: locationLat,
           locationLong: locationLong,
-          approximateRange: approximateRange),
+          approximateRange: approximateRange,
+          account: widget.account),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
@@ -197,7 +206,7 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
                 icon: Icon(
                   widget.account.role == 'super_admin' ||
                           widget.account.role == 'super_admin'
-                      ? Icons.manage_accounts_rounded
+                      ? Icons.visibility
                       : Icons.assignment,
                   size: 28,
                   color: _selectedIndex == 3
@@ -325,10 +334,11 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
                 ActivityLogs(account: widget.account),
                 widget.account.role == 'super_admin' ||
                         widget.account.role == 'super_admin'
-                    ? ManageAccounts(
+                    ? AdminDashboard(
                         account: widget.account,
-                        systemSettings: widget.systemSettings)
-                    : RequestChanges(account: widget.account)
+                        systemSettings: widget.systemSettings,
+                      )
+                    : RequestStatus(account: widget.account),
               ],
             ),
     );

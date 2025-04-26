@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../Login/LoginPage.dart';
-import '../attendance_marking/take_attendance.dart';
 import '../geolocator/geolocator_service.dart';
+import '../manage_accounts/manage_accounts.dart';
 import '../manage_system_settings/manage_settings.dart';
 import '../model/account.dart';
 import '../model/activity.dart';
@@ -87,6 +87,16 @@ class DashboardDrawer {
                         account: account,
                       )),
                   color: Colors.indigoAccent.shade400),
+            if (account.role == 'super_admin' || account.role == 'admin')
+              _drawerTile(
+                  icon: Icons.manage_accounts,
+                  label: "Manage Accounts",
+                  onTap: () => _navigateTo(
+                        context,
+                        ManageAccounts(
+                            account: account, systemSettings: systemSettings),
+                      ),
+                  color: Colors.green),
             _drawerTile(
               icon: Icons.logout,
               label: "Logout",

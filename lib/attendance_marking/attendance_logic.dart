@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../attendance_dashboard/attendance_dashboard.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '../model/attendance.dart';
+import '../model/setting.dart';
 import 'mark_attendance_response.dart';
 
 final supabase = Supabase.instance.client;
@@ -100,7 +102,8 @@ Future<MarkAttendanceResponse> markAttendance({
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Current activity updated: $activity"),
-          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.green,
         ),
       );
 
@@ -127,7 +130,8 @@ Future<MarkAttendanceResponse> markAttendance({
         'activity': 'work',
         'account_id': account.id,
       });
-    } else if (status == 'check_in' && now.hour > 9) {
+    } else if (status == 'check_in' &&
+        (now.hour > 9 || (now.hour == 9 && now.minute > 0))) {
       await insertActivity(dbHelper: dbHelper, row: {
         'activity': 'work',
         'account_id': account.id,
@@ -140,6 +144,8 @@ Future<MarkAttendanceResponse> markAttendance({
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(
           "${status == 'check_in' ? 'Check in' : 'Check out'} for: ${account.name}"),
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.green,
     ));
 
     return MarkAttendanceResponse(
@@ -152,6 +158,41 @@ Future<MarkAttendanceResponse> markAttendance({
   } catch (e) {
     debugPrint("Attendance Data is not Saved: $e");
     return MarkAttendanceResponse(result: MarkAttendanceResult.error);
+  }
+}
+
+void handleAttendanceResult(BuildContext context, MarkAttendanceResult result,
+    MarkAttendanceResponse response, List<Setting> systemSettings) {
+  switch (result) {
+    case MarkAttendanceResult.successCheckIn:
+    case MarkAttendanceResult.updatedActivity:
+    case MarkAttendanceResult.successCheckOut:
+      Navigator.of(context).pop();
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AttendanceDashboard(
+            account: response.account!,
+            systemSettings: systemSettings,
+          ),
+        ),
+      );
+
+      break;
+
+    case MarkAttendanceResult.cancelled:
+      Navigator.of(context).pop();
+      break;
+
+    case MarkAttendanceResult.error:
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Cannot mark in current time. Try again later."),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.orange,
+        ),
+      );
+      break;
   }
 }
 

@@ -13,11 +13,14 @@ import '../model/setting.dart';
 import 'face_registration.dart';
 import '../model/account.dart';
 import '../attendance_dashboard/recognizer.dart';
+import 'register_guest_logic.dart';
 
 class RegisterAttendance extends StatefulWidget {
   final Account? account;
   final List<Setting>? systemSettings;
-  const RegisterAttendance({super.key, this.account, this.systemSettings});
+  final bool isGuest;
+  const RegisterAttendance(
+      {super.key, this.account, this.systemSettings, this.isGuest = false});
 
   @override
   State<RegisterAttendance> createState() => _RegisterAttendanceState();
@@ -33,6 +36,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
   late FaceDetector faceDetector;
   late Recognizer recognizer;
   final dbHelper = SupabaseDbHelper();
+  final RegisterGuestLogic guestLogic = RegisterGuestLogic();
 
   final Map<String, String> _roleMap = {
     'admin': 'Admin',
@@ -209,44 +213,51 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                       String imageUrl =
                           '${dotenv.env['SUPABASE_URL']}/storage/v1/object/public/images/public/$uniqueUrl';
                       Map<String, dynamic> row = {
-                        'name': _nameController.text,
-                        'phone': _phoneController.text,
-                        'email': _emailController.text,
+                        'name': _nameController.text.trim(),
+                        'phone': _phoneController.text.trim(),
+                        'email': _emailController.text.trim(),
                         'role': _selectedRole!,
                         'image_url': imageUrl,
+                        'embeddings': recognition.embeddings
                       };
                       try {
-                        await dbHelper.insert('accounts', row);
-                        final newAccount =
-                            await dbHelper.getRowByField<Account>(
-                          'accounts',
-                          'email',
-                          _emailController.text,
-                          (data) => Account.fromMap(data),
-                        );
-                        if (newAccount != null) {
-                          await recognizer.registerFaceInDb(
-                            recognition.embeddings,
-                            newAccount,
+                        if (widget.isGuest) {
+                          await guestLogic.insertRegisterAccountRequests(
+                              dbHelper: dbHelper, row: row);
+                        } else {
+                          await dbHelper.insert('accounts', row);
+                          final newAccount =
+                              await dbHelper.getRowByField<Account>(
+                            'accounts',
+                            'email',
+                            _emailController.text,
+                            (data) => Account.fromMap(data),
                           );
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Face Registered")),
+                          if (newAccount != null) {
+                            await recognizer.registerFaceInDb(
+                              recognition.embeddings,
+                              newAccount,
+                            );
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("Face Registered")),
+                            );
+                          }
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pop(); // Close dialog
+                          Navigator.push(
+                            context,
+                            widget.account != null &&
+                                    widget.systemSettings != null
+                                ? MaterialPageRoute(
+                                    builder: (context) => AccountDashboard(
+                                          account: widget.account!,
+                                          systemSettings:
+                                              widget.systemSettings!,
+                                        ))
+                                : MaterialPageRoute(
+                                    builder: (context) => LoginPage()),
                           );
                         }
-                        Navigator.of(context).pop();
-                        Navigator.of(context).pop(); // Close dialog
-                        Navigator.push(
-                          context,
-                          widget.account != null &&
-                                  widget.systemSettings != null
-                              ? MaterialPageRoute(
-                                  builder: (context) => AccountDashboard(
-                                        account: widget.account!,
-                                        systemSettings: widget.systemSettings!,
-                                      ))
-                              : MaterialPageRoute(
-                                  builder: (context) => LoginPage()),
-                        );
                       } catch (e) {
                         debugPrint("Registration error: $e");
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -388,7 +399,10 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Register Account')),
+      appBar: AppBar(
+          title: Text(!widget.isGuest
+              ? 'Register Account'
+              : 'Register Account - Guest')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
-import '../model/account_edit_request.dart';
+import '../model/requests.dart';
 import 'request_changes_logic.dart';
 
 class ProcessRequest extends StatefulWidget {
@@ -14,7 +14,7 @@ class ProcessRequest extends StatefulWidget {
 }
 
 class _ProcessRequestState extends State<ProcessRequest> {
-  List<AccountEditRequest> requests = [];
+  List<Request> requests = [];
   late Account? requestedAccount;
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
   final RequestChangesLogic requestsLogic = RequestChangesLogic();
@@ -37,20 +37,22 @@ class _ProcessRequestState extends State<ProcessRequest> {
   }
 
   Widget _buildUserAvatar(String? imageUrl, String name) {
-    return CircleAvatar(
-      radius: 50,
-      backgroundColor: Colors.blueAccent,
-      backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-      child: imageUrl == null
-          ? Text(
-              name.isNotEmpty ? name[0].toUpperCase() : "?",
-              style: const TextStyle(color: Colors.white, fontSize: 28),
-            )
-          : null,
+    return Center(
+      child: CircleAvatar(
+        radius: 50,
+        backgroundColor: Colors.blueAccent,
+        backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
+        child: imageUrl == null
+            ? Text(
+                name.isNotEmpty ? name[0].toUpperCase() : "?",
+                style: const TextStyle(color: Colors.white, fontSize: 28),
+              )
+            : null,
+      ),
     );
   }
 
-  void _showRequestDialog(AccountEditRequest request) async {
+  void _showRequestDialog(Request request) async {
     try {
       _isLoadingModal = true;
       final loadRequestedAccount = await requestsLogic.getRequestedAccount(
@@ -87,11 +89,19 @@ class _ProcessRequestState extends State<ProcessRequest> {
                                   requestedAccount!.imageUrl,
                                   requestedAccount!.name)),
                           const SizedBox(height: 16),
-                          const Text("After:",
+                          const Text("Request:",
                               style: TextStyle(fontWeight: FontWeight.bold)),
+                          if (request.requestedChanges.containsKey('image_url'))
+                            _buildUserAvatar(
+                                request.requestedChanges['image_url'],
+                                request.requestedChanges['name']),
+                          if (request.requestedChanges.containsKey('image_url'))
+                            Text("Requested changes in profile picture"),
                           const SizedBox(height: 6),
-                          ...request.requestedChanges.entries.map((e) => Text(
-                              "${e.key.toString()[0].toUpperCase() + e.key.toString().substring(1).toLowerCase()}: ${e.value}")),
+                          ...request.requestedChanges.entries
+                              .where((entry) => entry.key != 'image_url')
+                              .map((e) => Text(
+                                  "${e.key.toString()[0].toUpperCase() + e.key.toString().substring(1).toLowerCase()}: ${e.value}")),
                           if (request.requestedChanges.isEmpty)
                             const Text("No changes specified."),
                         ],
@@ -108,8 +118,7 @@ class _ProcessRequestState extends State<ProcessRequest> {
     );
   }
 
-  Future<AccountEditRequest?> _showRequestDialogPending(
-      AccountEditRequest request) async {
+  Future<Request?> _showRequestDialogPending(Request request) async {
     try {
       _isLoadingModal = true;
       final loadRequestedAccount = await requestsLogic.getRequestedAccount(
@@ -126,7 +135,7 @@ class _ProcessRequestState extends State<ProcessRequest> {
       _isLoadingModal = false;
     }
 
-    return showDialog<AccountEditRequest>(
+    return showDialog<Request>(
       context: context,
       barrierDismissible: false,
       builder: (_) {
@@ -153,11 +162,20 @@ class _ProcessRequestState extends State<ProcessRequest> {
                           Text("Email: ${requestedAccount!.email}"),
                           Text("Phone: ${requestedAccount!.phone}"),
                           const SizedBox(height: 16),
+                          if (request.requestedChanges.containsKey('image_url'))
+                            _buildUserAvatar(
+                                request.requestedChanges['image_url'],
+                                request.requestedChanges['name']),
+                          if (request.requestedChanges.containsKey('image_url'))
+                            const Text("Requested changes in profile picture",
+                                style: TextStyle(fontStyle: FontStyle.italic)),
+                          const SizedBox(height: 6),
                           const Text("After:",
                               style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 6),
-                          ...request.requestedChanges.entries.map((e) => Text(
-                              "${e.key.toString()[0].toUpperCase() + e.key.toString().substring(1).toLowerCase()}: ${e.value}")),
+                          ...request.requestedChanges.entries
+                              .where((entry) => entry.key != 'image_url')
+                              .map((e) => Text(
+                                  "${e.key.toString()[0].toUpperCase() + e.key.toString().substring(1).toLowerCase()}: ${e.value}")),
                           if (request.requestedChanges.isEmpty)
                             const Text("No changes specified."),
                         ],
@@ -186,9 +204,20 @@ class _ProcessRequestState extends State<ProcessRequest> {
     );
   }
 
-  void _updateRequestStatus(AccountEditRequest request, String action) async {
+  Future<void> _updateRequestStatus(Request request, String action) async {
     try {
       if (action == "approve") {
+        List<String> deletedPath = [];
+        debugPrint("Requested account: ${requestedAccount!.imageUrl}");
+
+        if (requestedAccount != null) {
+          if (requestedAccount!.imageUrl != null) {
+            deletedPath.add(requestedAccount!.imageUrl!);
+          }
+          debugPrint("deletedPath: $deletedPath");
+
+          await dbHelper.deleteFromBucket(deletedPath);
+        }
         await requestsLogic.updateAccount(dbHelper: dbHelper, request: request);
       }
 
@@ -201,9 +230,23 @@ class _ProcessRequestState extends State<ProcessRequest> {
       debugPrint(
           "Failed to update account and request in updateRequestStatus: $e");
     } finally {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Account updated.')),
-      );
+      if (action == "approve") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Request Accepted. Account updated.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Request Rejected.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
 
       Navigator.pop(context, request);
     }
@@ -218,12 +261,8 @@ class _ProcessRequestState extends State<ProcessRequest> {
     final rejected =
         requests.where((r) => r.requestStatus == 'rejected').toList();
 
-    Widget buildSection(
-        String title,
-        List<AccountEditRequest> data,
-        Color color,
-        void Function(AccountEditRequest) onTap,
-        String emptyText) {
+    Widget buildSection(String title, List<Request> data, Color color,
+        void Function(Request) onTap, String emptyText) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

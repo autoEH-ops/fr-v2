@@ -20,6 +20,10 @@ class ManageAccounts extends StatefulWidget {
 
 class _ManageAccountsState extends State<ManageAccounts> {
   List<Account> accounts = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  List<Account> filteredAccounts = [];
+
   Map<int, Activity> latestActivities = {};
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
   final ManageAccountsLogic managementLogic = ManageAccountsLogic();
@@ -41,6 +45,7 @@ class _ManageAccountsState extends State<ManageAccounts> {
 
     setState(() {
       accounts = loadAccounts;
+      filteredAccounts = loadAccounts;
       latestActivities = loadActivitiesMap;
       _isLoading = false;
     });
@@ -102,6 +107,13 @@ class _ManageAccountsState extends State<ManageAccounts> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("Manage Accounts"),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        foregroundColor: Colors.black87,
+      ),
       body: _isLoading
           ? Center(child: const CircularProgressIndicator())
           : accounts.isEmpty
@@ -153,154 +165,212 @@ class _ManageAccountsState extends State<ManageAccounts> {
                         ),
                       ),
 
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                            filteredAccounts = accounts
+                                .where((account) => account.name
+                                    .toLowerCase()
+                                    .contains(_searchQuery.toLowerCase()))
+                                .toList();
+                          });
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Search by name...',
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                      filteredAccounts = accounts;
+                                    });
+                                  },
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+
                     // Account list
                     Expanded(
-                      child: ListView.builder(
-                        itemCount: accounts.length,
-                        itemBuilder: (context, index) {
-                          final account = accounts[index];
-                          final isSelected = selectedAccounts.contains(account);
+                      child: filteredAccounts.isEmpty
+                          ? const Center(
+                              child: Text(
+                                "No account with that name found.",
+                                style:
+                                    TextStyle(fontSize: 16, color: Colors.grey),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: filteredAccounts.length,
+                              itemBuilder: (context, index) {
+                                final account = accounts[index];
+                                final isSelected =
+                                    selectedAccounts.contains(account);
 
-                          return Card(
-                            color: isSelected ? Colors.red[50] : Colors.white,
-                            elevation: 2,
-                            margin: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: isSelected
-                                  ? const BorderSide(
-                                      color: Colors.redAccent, width: 1.5)
-                                  : BorderSide.none,
-                            ),
-                            child: ListTile(
-                              leading: Checkbox(
-                                value: isSelected,
-                                onChanged: (value) {
-                                  setState(() {
-                                    if (value == true) {
-                                      selectedAccounts.add(account);
-                                    } else {
-                                      selectedAccounts.remove(account);
-                                    }
-                                  });
-                                },
-                              ),
-                              title: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundColor: Colors.blueAccent,
-                                        backgroundImage: account.imageUrl !=
-                                                null
-                                            ? NetworkImage(account.imageUrl!)
-                                            : null,
-                                        child: account.imageUrl == null
-                                            ? Text(
-                                                account.name[0].toUpperCase(),
+                                return Card(
+                                  color: isSelected
+                                      ? Colors.red[50]
+                                      : Colors.white,
+                                  elevation: 2,
+                                  margin: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: isSelected
+                                        ? const BorderSide(
+                                            color: Colors.redAccent, width: 1.5)
+                                        : BorderSide.none,
+                                  ),
+                                  child: ListTile(
+                                    leading: Checkbox(
+                                      value: isSelected,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          if (value == true) {
+                                            selectedAccounts.add(account);
+                                          } else {
+                                            selectedAccounts.remove(account);
+                                          }
+                                        });
+                                      },
+                                    ),
+                                    title: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              backgroundColor:
+                                                  Colors.blueAccent,
+                                              backgroundImage:
+                                                  account.imageUrl != null
+                                                      ? NetworkImage(
+                                                          account.imageUrl!)
+                                                      : null,
+                                              child: account.imageUrl == null
+                                                  ? Text(
+                                                      account.name[0]
+                                                          .toUpperCase(),
+                                                      style: const TextStyle(
+                                                          color: Colors.white),
+                                                    )
+                                                  : null,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Text(
+                                                account.name,
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
                                                 style: const TextStyle(
-                                                    color: Colors.white),
-                                              )
-                                            : null,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          account.name,
-                                          overflow: TextOverflow.ellipsis,
-                                          maxLines: 1,
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.email,
-                                          size: 16, color: Colors.grey),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        child: Text(
-                                          account.email,
-                                          style: const TextStyle(fontSize: 13),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.email,
+                                                size: 16, color: Colors.grey),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                account.email,
+                                                style: const TextStyle(
+                                                    fontSize: 13),
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.phone,
-                                          size: 16, color: Colors.grey),
-                                      const SizedBox(width: 6),
-                                      Text(account.phone,
-                                          style: const TextStyle(fontSize: 13)),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.info_outline,
-                                          size: 16, color: Colors.grey),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        "Role: ${managementLogic.formatReadableRole(account.role)}",
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                    ],
-                                  ),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        width: 10,
-                                        height: 10,
-                                        decoration: BoxDecoration(
-                                          color: latestActivities[account.id]
-                                                      ?.activity !=
-                                                  null
-                                              ? managementLogic
-                                                  .getActivityColor(
-                                                      latestActivities[
-                                                              account.id]!
-                                                          .activity)
-                                              : Colors
-                                                  .red, // define role-based colors
-                                          shape: BoxShape.circle,
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.phone,
+                                                size: 16, color: Colors.grey),
+                                            const SizedBox(width: 6),
+                                            Text(account.phone,
+                                                style: const TextStyle(
+                                                    fontSize: 13)),
+                                          ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        latestActivities[account.id]
-                                                    ?.activity !=
-                                                null
-                                            ? managementLogic
-                                                .formatReadableActivity(
-                                                    latestActivities[
-                                                            account.id]!
-                                                        .activity)
-                                            : "Check Out",
-                                        style: const TextStyle(fontSize: 13),
-                                      ),
-                                    ],
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          children: [
+                                            const Icon(Icons.info_outline,
+                                                size: 16, color: Colors.grey),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              "Role: ${managementLogic.formatReadableRole(account.role)}",
+                                              style:
+                                                  const TextStyle(fontSize: 13),
+                                            ),
+                                          ],
+                                        ),
+                                        Row(
+                                          children: [
+                                            Container(
+                                              width: 10,
+                                              height: 10,
+                                              decoration: BoxDecoration(
+                                                color: latestActivities[
+                                                                account.id]
+                                                            ?.activity !=
+                                                        null
+                                                    ? managementLogic
+                                                        .getActivityColor(
+                                                            latestActivities[
+                                                                    account.id]!
+                                                                .activity)
+                                                    : Colors
+                                                        .red, // define role-based colors
+                                                shape: BoxShape.circle,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              latestActivities[account.id]
+                                                          ?.activity !=
+                                                      null
+                                                  ? managementLogic
+                                                      .formatReadableActivity(
+                                                          latestActivities[
+                                                                  account.id]!
+                                                              .activity)
+                                                  : "Check Out",
+                                              style:
+                                                  const TextStyle(fontSize: 13),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                    subtitle: Text(
+                                      "Please tap to update information.",
+                                      style: const TextStyle(
+                                          fontStyle: FontStyle.italic),
+                                    ),
+                                    onTap: () =>
+                                        _navigateToAccountDetail(account),
                                   ),
-                                ],
-                              ),
-                              subtitle: Text(
-                                "Please tap to update information.",
-                                style: const TextStyle(
-                                    fontStyle: FontStyle.italic),
-                              ),
-                              onTap: () => _navigateToAccountDetail(account),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),

@@ -229,6 +229,7 @@ class _AccountDashboardState extends State<AccountDashboard> {
                             _navigateTo(
                                 context,
                                 TakeAttendance(
+                                  account: widget.account,
                                   systemSettings: widget.systemSettings,
                                 ));
                           } else {

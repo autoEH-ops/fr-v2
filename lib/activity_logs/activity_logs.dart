@@ -125,14 +125,23 @@ class _ActivityLogsState extends State<ActivityLogs> {
                                           fontSize: 14,
                                         ),
                                       ),
-                                      Text(
-                                        end,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: color,
-                                          fontSize: 14,
-                                        ),
-                                      ),
+                                      log['activity'] != "early_check_out"
+                                          ? Text(
+                                              end,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: color,
+                                                fontSize: 14,
+                                              ),
+                                            )
+                                          : Text(
+                                              start,
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: color,
+                                                fontSize: 14,
+                                              ),
+                                            ),
                                     ],
                                   ),
                                 ),

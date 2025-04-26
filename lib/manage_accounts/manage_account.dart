@@ -1,10 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../attendance_dashboard/recognizer.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
+import 'embedding_logic.dart';
 import 'manage_accounts_logic.dart';
 
 class ManageAccount extends StatefulWidget {
@@ -20,8 +23,11 @@ class _ManageAccountState extends State<ManageAccount> {
   late TextEditingController _emailController;
   late TextEditingController _phoneController;
   String _selectedRole = 'super_admin';
+  late FaceDetector faceDetector;
+  late Recognizer recognizer;
   SupabaseDbHelper dbHelper = SupabaseDbHelper();
   ManageAccountsLogic managementLogic = ManageAccountsLogic();
+  EmbeddingLogic embeddingLogic = EmbeddingLogic();
   File? _imageFile;
 
   final Map<String, String> _roles = {
@@ -38,6 +44,10 @@ class _ManageAccountState extends State<ManageAccount> {
     _emailController = TextEditingController(text: widget.account.email);
     _phoneController = TextEditingController(text: widget.account.phone);
     _selectedRole = widget.account.role;
+    final options =
+        FaceDetectorOptions(performanceMode: FaceDetectorMode.accurate);
+    faceDetector = FaceDetector(options: options);
+    recognizer = Recognizer();
   }
 
   @override
@@ -55,6 +65,86 @@ class _ManageAccountState extends State<ManageAccount> {
         _imageFile = File(picked.path);
       });
     }
+  }
+
+  void _updateEmbedding() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Center(
+            child: const Text(
+              'Update Embedding',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  backgroundColor: Colors.blueAccent,
+                ),
+                icon: const Icon(
+                  Icons.upload_file,
+                  color: Colors.white,
+                ),
+                label: const Text(
+                  'Upload Image',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () {
+                  embeddingLogic.pickImageFromGallery(
+                      context: context,
+                      faceDetector: faceDetector,
+                      recognizer: recognizer,
+                      dbHelper: dbHelper,
+                      name: _nameController.text.trim());
+                },
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  backgroundColor: Colors.green,
+                ),
+                icon: const Icon(
+                  Icons.camera_alt,
+                  color: Colors.white,
+                ),
+                label: const Text(
+                  'Live Detection',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () {
+                  embeddingLogic.showFaceRegistrationDialog(
+                      context: context, name: _nameController.text.trim());
+                },
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  backgroundColor: Colors.red,
+                ),
+                icon: const Icon(
+                  Icons.cancel,
+                  color: Colors.white,
+                ),
+                label: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _updateAccount() async {
@@ -93,7 +183,13 @@ class _ManageAccountState extends State<ManageAccount> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Edit Account')),
+      appBar: AppBar(
+        title: Text("Update Account Information"),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        foregroundColor: Colors.black87,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -152,12 +248,12 @@ class _ManageAccountState extends State<ManageAccount> {
               controller: _emailController,
               decoration: const InputDecoration(labelText: 'Email'),
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: _phoneController,
               decoration: const InputDecoration(labelText: 'Phone'),
               keyboardType: TextInputType.phone,
             ),
-            const SizedBox(height: 16),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _selectedRole,
@@ -172,7 +268,12 @@ class _ManageAccountState extends State<ManageAccount> {
               },
               decoration: const InputDecoration(labelText: 'Role'),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: _updateEmbedding,
+              child: const Text('Embedding'),
+            ),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _updateAccount,
               child: const Text('Update Account'),

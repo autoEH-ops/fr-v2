@@ -3,11 +3,11 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../db/supabase_db_helper.dart';
-import '../geolocator/geolocator_service.dart';
 import '../model/account.dart';
 import '../model/activity.dart';
+import '../model/attendance.dart';
 import '../model/setting.dart';
-import '../widget/dashboard_drawer.dart';
+import 'admin_logic.dart';
 
 class AdminDashboard extends StatefulWidget {
   final Account account;
@@ -20,159 +20,246 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
-  late Activity? activity;
-  double locationLat = 0.0;
-  double locationLong = 0.0;
-  double approximateRange = 0.0;
-  final dbHelper = SupabaseDbHelper();
-  final GeolocatorService _geolocatorService = GeolocatorService();
-  final DashboardDrawer _dashboardDrawer = DashboardDrawer();
+  List<Attendance> currentAttendances = [];
+  List<Account> accounts = [];
+  List<Activity> activities = [];
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  List<Account> filteredAccounts = [];
+  List<Activity> filteredActivities = [];
+  DateTime time = DateTime.now();
+  final SupabaseDbHelper dbHelper = SupabaseDbHelper();
+  final AdminLogic adminLogic = AdminLogic();
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    locationLat = double.parse(widget.systemSettings[0].value);
-    locationLong = double.parse(widget.systemSettings[1].value);
-    approximateRange = double.parse(widget.systemSettings[2].value);
+    loadLatestData();
   }
 
-  Future<Activity?> checkEarlyCheckOut() async {
-    activity = await dbHelper.getActivityRowWhere(
-        'activities', widget.account, DateTime.now(), Activity.fromMap);
-    return activity;
+  Future<void> loadLatestData() async {
+    final loadCurrentAttendances =
+        await adminLogic.getAttendanceCurrentDay(dbHelper: dbHelper);
+
+    List<Account> loadAccounts = [];
+    for (final attendance in loadCurrentAttendances) {
+      final account = await adminLogic.getAccount(
+        dbHelper: dbHelper,
+        attendance: attendance,
+      );
+      if (account != null) {
+        loadAccounts.add(account);
+      }
+    }
+
+    List<Activity> loadActivity = [];
+    for (final account in loadAccounts) {
+      final activity = await adminLogic.getLatestActivity(
+          dbHelper: dbHelper, accountId: account.id);
+      if (activity != null) {
+        loadActivity.add(activity);
+      }
+    }
+    setState(() {
+      currentAttendances = loadCurrentAttendances;
+      accounts = loadAccounts;
+      activities = loadActivity;
+      filteredAccounts = loadAccounts;
+      filteredActivities = loadActivity;
+      _isLoading = false;
+    });
   }
 
-  String readableRole(String role) {
-    return role
-        .split('_')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
+  void _filterAccounts(String query) {
+    if (query.isEmpty) {
+      setState(() {
+        filteredAccounts = accounts;
+        filteredActivities = activities;
+      });
+    } else {
+      final lowerQuery = query.toLowerCase();
+      final List<Account> matchedAccounts = [];
+      final List<Activity> matchedActivities = [];
+
+      for (int i = 0; i < accounts.length; i++) {
+        if (accounts[i].name.toLowerCase().contains(lowerQuery)) {
+          matchedAccounts.add(accounts[i]);
+          matchedActivities.add(activities[i]);
+        }
+      }
+
+      setState(() {
+        filteredAccounts = matchedAccounts;
+        filteredActivities = matchedActivities;
+        _searchQuery = query;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          '${readableRole(widget.account.role)} Dashboard',
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.blue.shade800,
-        foregroundColor: Colors.white,
-        elevation: 6,
-        shadowColor: const Color.fromRGBO(33, 150, 243, 0.4),
-      ),
-      backgroundColor: Colors.grey[50],
-      drawer: _dashboardDrawer.buildDashboardDrawer(
-        context: context,
-        account: widget.account,
-        systemSettings: widget.systemSettings,
-        geolocatorService: _geolocatorService,
-        checkEarlyCheckOut: checkEarlyCheckOut,
-        locationLat: locationLat,
-        locationLong: locationLong,
-        approximateRange: approximateRange,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // User Profile Card
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Colors.blue.shade600,
-                    Colors.blue.shade400,
-                  ],
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color.fromRGBO(33, 150, 243, 0.2),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.all(20),
-                leading: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color.fromRGBO(255, 255, 255, 0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.person_outline,
-                    size: 32,
-                    color: Colors.white,
-                  ),
-                ),
-                title: Text(
-                  widget.account.name,
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 5.0),
-                    Text(
-                      'Role: ${readableRole(widget.account.role)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: const Color.fromRGBO(255, 255, 255, 0.9),
+        body: _isLoading
+            ? Center(child: const CircularProgressIndicator())
+            : currentAttendances.isEmpty || activities.isEmpty
+                ? const Center(
+                    child: Text("No account currently check in."),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Today: ${adminLogic.formatYearMonthAndDay(time)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            Text(
+                              'Current Time: ${adminLogic.formatHourAndSecond(time)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Email: ${widget.account.email}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: const Color.fromRGBO(255, 255, 255, 0.9),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: _filterAccounts,
+                          decoration: InputDecoration(
+                            hintText: 'Search by name...',
+                            prefixIcon: Icon(Icons.search),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() {
+                                        _searchQuery = '';
+                                        filteredAccounts = accounts;
+                                        filteredActivities = activities;
+                                      });
+                                    },
+                                  )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    Text(
-                      'Phone: ${widget.account.phone}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: const Color.fromRGBO(255, 255, 255, 0.9),
+                      const SizedBox(height: 10),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: filteredAccounts.isNotEmpty
+                              ? ListView.builder(
+                                  itemCount: filteredAccounts.length,
+                                  itemBuilder: (context, index) {
+                                    final account = filteredAccounts[index];
+                                    final activity = filteredActivities[index];
+                                    return Column(
+                                      children: [
+                                        Row(
+                                          children: [
+                                            CircleAvatar(
+                                              radius: 45,
+                                              backgroundColor:
+                                                  Colors.indigo.shade600,
+                                              backgroundImage:
+                                                  account.imageUrl != null
+                                                      ? NetworkImage(
+                                                          account.imageUrl!)
+                                                      : null,
+                                              child: account.imageUrl == null
+                                                  ? Text(
+                                                      account.name[0]
+                                                          .toUpperCase(),
+                                                      style: const TextStyle(
+                                                        fontSize: 40,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.white,
+                                                      ),
+                                                    )
+                                                  : null,
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    account.name,
+                                                    style: const TextStyle(
+                                                        fontSize: 18,
+                                                        fontWeight:
+                                                            FontWeight.bold),
+                                                  ),
+                                                  Text(
+                                                    adminLogic.readableString(
+                                                        account.role),
+                                                    style: const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.grey),
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Row(
+                                                    children: [
+                                                      Container(
+                                                        width: 10,
+                                                        height: 10,
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: adminLogic
+                                                              .getActivityColor(
+                                                                  activity
+                                                                      .activity), // define role-based colors
+                                                          shape:
+                                                              BoxShape.circle,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(width: 6),
+                                                      Flexible(
+                                                        child: Text(
+                                                          "${adminLogic.readableString(activity.activity)} since ${adminLogic.formatTime(activity.activityTime!)}",
+                                                          style:
+                                                              const TextStyle(
+                                                                  fontSize: 14),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        const Divider(height: 24, thickness: 1),
+                                      ],
+                                    );
+                                  },
+                                )
+                              : const Center(
+                                  child: Text(
+                                    'No account with that name found.',
+                                    style: TextStyle(
+                                        fontSize: 16, color: Colors.grey),
+                                  ),
+                                ),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Access Section
-            Padding(
-              padding: const EdgeInsets.only(left: 8.0),
-              child: Text(
-                "Quick Access",
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: Colors.blue.shade800,
-                      letterSpacing: 0.5,
-                    ),
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
+                    ],
+                  ));
   }
 }

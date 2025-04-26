@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../db/supabase_db_helper.dart';
@@ -41,50 +43,61 @@ class _RequestChangesState extends State<RequestChanges> {
   }
 
   void _insertRequest() async {
-    Map<String, dynamic> accountRow = {
-      'name': _nameController.text.trim(),
-      'email': _emailController.text.trim(),
-      'phone': _phoneController.text.trim(),
-    };
-    final row = {
-      'account_id': widget.account.id,
-      'request_status': 'pending',
-      'requested_changes': accountRow,
-    };
+    String imageUrl = '';
+    Map<String, dynamic> accountRow = {};
+    Map<String, dynamic> row = {};
 
-    await dbHelper.insert('account_edit_requests', row);
-    debugPrint("Get here: ${row['requested_changes']}");
+    try {
+      if (_imageFile != null) {
+        Uint8List imageBytes = await _imageFile!.readAsBytes();
+        final String uniqueUrl =
+            '${_emailController.text.trim()}_${widget.account.role}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        debugPrint("This is the unique url: $uniqueUrl");
+        final String filePath = 'public/$uniqueUrl';
+        await dbHelper.insertIntoBucket(filePath, imageBytes);
+        imageUrl =
+            '${dotenv.env['SUPABASE_URL']}/storage/v1/object/public/images/public/$uniqueUrl';
+        debugPrint("This is the $imageUrl");
+      }
+      accountRow = {
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        if (_imageFile != null) ...{'image_url': imageUrl}
+      };
+      row = {
+        'account_id': widget.account.id,
+        'request_status': 'pending',
+        'requested_changes': accountRow,
+        'request_category': 'account_edit'
+      };
 
-    // if (_imageFile != null) {
-    //   await dbHelper.updateFromBucket(_imageFile!, widget.account);
-    //   debugPrint("Sucessful in replacing image");
-    // }
-    // try {
-    //   await requestLogic.updateAccountInformation(
-    //       account: widget.account, dbHelper: dbHelper, row: row);
-    //   setState(() {
-    //     widget.account.name = _nameController.text.trim();
-    //     widget.account.email = _emailController.text.trim();
-    //     widget.account.phone = _phoneController.text.trim();
-    //   });
-    // } catch (e) {
-    //   debugPrint('Update error: $e');
-    // } finally {
-    //   ScaffoldMessenger.of(context).showSnackBar(
-    //     const SnackBar(
-    //         content: Text(
-    //             'Account updated. Updated photo will take time to process and take effect')),
-    //   );
-
-    //   Navigator.pop(context, widget.account);
-    // }
-    Navigator.of(context).pop();
+      debugPrint("Get here: ${row['requested_changes']}");
+      await dbHelper.insert('requests', row);
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content:
+              Text('Request has been made. Please wait for admin approval.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      debugPrint("Failed to create request: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Request Profile Change')),
+      appBar: AppBar(
+        title: Text("Request Profile Change"),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        foregroundColor: Colors.black87,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: ListView(
@@ -96,22 +109,24 @@ class _RequestChangesState extends State<RequestChanges> {
                   GestureDetector(
                     onTap: _pickImage,
                     child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.blueAccent,
+                      radius: 45,
+                      backgroundColor: Colors.indigo.shade600,
                       backgroundImage: _imageFile != null
-                          ? FileImage(_imageFile!)
-                          : NetworkImage(widget.account.imageUrl!),
-                      child: widget.account.imageUrl == null
-                          ? Text(
-                              widget.account.name.isNotEmpty
-                                  ? widget.account.name[0].toUpperCase()
-                                  : '?',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                              ),
-                            )
-                          : null,
+                          ? FileImage(_imageFile!) as ImageProvider
+                          : widget.account.imageUrl != null
+                              ? NetworkImage(widget.account.imageUrl!)
+                              : null,
+                      child:
+                          widget.account.imageUrl == null && _imageFile == null
+                              ? Text(
+                                  widget.account.name[0].toUpperCase(),
+                                  style: const TextStyle(
+                                    fontSize: 40,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : null,
                     ),
                   ),
                   Positioned(

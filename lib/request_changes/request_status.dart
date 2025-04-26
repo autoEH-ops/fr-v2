@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
-import '../model/account_edit_request.dart';
+import '../model/requests.dart';
 import 'request_changes_logic.dart';
 
 class RequestStatus extends StatefulWidget {
@@ -14,7 +14,7 @@ class RequestStatus extends StatefulWidget {
 }
 
 class _RequestStatusState extends State<RequestStatus> {
-  List<AccountEditRequest> requests = [];
+  List<Request> requests = [];
   late Account reviewerAccount;
 
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
@@ -37,7 +37,7 @@ class _RequestStatusState extends State<RequestStatus> {
     });
   }
 
-  String _getStatusMessage(AccountEditRequest request) {
+  String _getStatusMessage(Request request) {
     switch (request.requestStatus) {
       case 'pending':
         return 'Please wait for admin approval.';
@@ -63,7 +63,7 @@ class _RequestStatusState extends State<RequestStatus> {
     }
   }
 
-  void _showRequestDetails(AccountEditRequest request) {
+  void _showRequestDetails(Request request) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -104,20 +104,6 @@ class _RequestStatusState extends State<RequestStatus> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          'Approval',
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.blue.shade800,
-        foregroundColor: Colors.white,
-        elevation: 6,
-        shadowColor: const Color.fromRGBO(33, 150, 243, 0.4),
-      ),
       body: Padding(
         padding: const EdgeInsets.only(top: 16.0),
         child: _isLoading

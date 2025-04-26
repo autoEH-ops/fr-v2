@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../attendance_marking/take_attendance.dart';
 import '../geolocator/geolocator_service.dart';
+import '../model/account.dart';
 import '../model/activity.dart';
 import '../model/setting.dart';
 
@@ -20,7 +21,8 @@ class Fab {
           required Future<Activity?> Function() checkEarlyCheckOut,
           required double locationLat,
           required double locationLong,
-          required double approximateRange}) =>
+          required double approximateRange,
+          required Account account}) =>
       FloatingActionButton(
         onPressed: () async {
           final isNearby = await geolocatorService.isWithinRange(
@@ -47,6 +49,7 @@ class Fab {
             _navigateTo(
                 context,
                 TakeAttendance(
+                  account: account,
                   systemSettings: systemSettings,
                 ));
           } else {
@@ -61,14 +64,6 @@ class Fab {
             return;
           }
         },
-        // onPressed: () => _onFabPressed(
-        //     context: context,
-        //     systemSettings: systemSettings,
-        //     geolocatorService: geolocatorService,
-        //     checkEarlyCheckOut: checkEarlyCheckOut,
-        //     locationLat: locationLat,
-        //     locationLong: locationLong,
-        //     approximateRange: approximateRange),
         backgroundColor: Colors.indigo.shade600,
         elevation: 8,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),

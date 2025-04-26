@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../model/account.dart';
@@ -40,9 +41,24 @@ class SupabaseDbHelper {
     }
   }
 
-  Future<void> update(String table, int id, Map<String, dynamic> row) async {
+  Future<void> update(
+      String table, dynamic id, Map<String, dynamic> row) async {
     try {
       await supabase.from(table).update(row).eq('id', id).select();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateWhere(String table, String fieldName, dynamic fieldValue,
+      Map<String, dynamic> row) async {
+    try {
+      final data = await supabase
+          .from(table)
+          .update(row)
+          .eq(fieldName, fieldValue)
+          .select();
+      debugPrint("This is the updated data: $data['name']");
     } catch (e) {
       rethrow;
     }
@@ -93,6 +109,7 @@ class SupabaseDbHelper {
       if (response != null) {
         return fromMap(response);
       }
+
       return null;
     } catch (e) {
       rethrow;
@@ -107,16 +124,11 @@ class SupabaseDbHelper {
     required T Function(Map<String, dynamic>) fromMap,
   }) async {
     // Format date to just the date part for comparison
-    final date = DateTime.now();
-    final startOfDay = DateTime(date.year, date.month, date.day);
-    final endOfDay = startOfDay.add(Duration(days: 1));
     try {
       final response = await supabase
           .from(table)
           .select()
           .eq(fieldName, fieldValue)
-          // .gte('activity_time', startOfDay.toIso8601String())
-          // .lt('activity_time', endOfDay.toIso8601String())
           .order(orderByField, ascending: false) // Sort by latest
           .limit(1) // Only the latest one
           .maybeSingle();
@@ -231,6 +243,33 @@ class SupabaseDbHelper {
     }
   }
 
+  Future<List<T>> getRowsWhereFieldForCurrentDay<T>({
+    required String table,
+    required String fieldName,
+    required dynamic fieldValue,
+    required String dateTimeField, // e.g., 'check_in_time'
+    required T Function(Map<String, dynamic>) fromMap,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final startOfNextDay = startOfDay.add(const Duration(days: 1));
+
+      final response = await supabase
+          .from(table)
+          .select()
+          .eq(fieldName, fieldValue)
+          .gte(dateTimeField, startOfDay.toIso8601String())
+          .lt(dateTimeField, startOfNextDay.toIso8601String());
+
+      return (response as List)
+          .map((row) => fromMap(row as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> insertIntoBucket(String filePath, Uint8List imageBytes) async {
     try {
       await supabase.storage.from('images').uploadBinary(filePath, imageBytes);
@@ -244,6 +283,7 @@ class SupabaseDbHelper {
       if (filePaths.isNotEmpty) {
         await supabase.storage.from('images').remove(filePaths);
       }
+      debugPrint("Deleted successfully for: $filePaths");
     } catch (e) {
       rethrow;
     }
