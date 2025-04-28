@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../Login/LoginPage.dart';
 import '../geolocator/geolocator_service.dart';
+import '../leave_management/leave_dashboard.dart';
 import '../manage_accounts/manage_accounts.dart';
 import '../manage_system_settings/manage_settings.dart';
 import '../model/account.dart';
@@ -97,6 +98,16 @@ class DashboardDrawer {
                             account: account, systemSettings: systemSettings),
                       ),
                   color: Colors.green),
+            _drawerTile(
+              icon: Icons.logout,
+              label: "Leave",
+              color: Colors.blueGrey.shade600,
+              onTap: () => Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const LeaveDashboard()),
+                (route) => false,
+              ),
+            ),
             _drawerTile(
               icon: Icons.logout,
               label: "Logout",
