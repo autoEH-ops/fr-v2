@@ -1,12 +1,12 @@
 import 'dart:math';
 
-import 'package:created_by_618_abdo/GoogleAPIs/EmailAPI.dart';
-import 'package:created_by_618_abdo/GoogleAPIs/WhatsAppAPI.dart';
-import 'package:created_by_618_abdo/db/supabase_db_helper.dart';
-import 'package:created_by_618_abdo/model/account.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../GoogleAPIs/EmailAPI.dart';
+import '../GoogleAPIs/WhatsAppAPI.dart';
+import '../db/supabase_db_helper.dart';
+import '../model/account.dart';
 import '../model/otp.dart';
 
 class LoginService {

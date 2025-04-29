@@ -11,9 +11,10 @@ class Attendance {
   int accountId;
   DateTime? attendanceTime;
   String attendanceStatus;
+  int? leaveId;
 
-  Attendance(
-      this.id, this.accountId, this.attendanceTime, this.attendanceStatus);
+  Attendance(this.id, this.accountId, this.attendanceTime,
+      this.attendanceStatus, this.leaveId);
   factory Attendance.fromMap(Map<String, dynamic> map) {
     return Attendance(
       map['id'] as int?,
@@ -22,6 +23,7 @@ class Attendance {
           ? DateTime.parse(map['attendance_time'])
           : null,
       map['attendance_status'] as String,
+      map['leave_id'] as int?,
     );
   }
 }

@@ -83,6 +83,21 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                       ),
                     ),
                     // Attendance List
+                    Text(
+                      "Upcoming",
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+
+                    ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: attendances
+                          .where((att) => att.attendanceStatus == 'on_leave')
+                          .length,
+                      itemBuilder: (context, index) {
+                        Text("$index");
+                      },
+                    ),
 
                     Text(
                       "Attendance List",

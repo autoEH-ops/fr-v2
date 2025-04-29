@@ -278,6 +278,17 @@ class SupabaseDbHelper {
     }
   }
 
+  Future<void> insertAttachmentIntoBucket(
+      String bucketName, String filePath, Uint8List imageBytes) async {
+    try {
+      await supabase.storage
+          .from(bucketName)
+          .uploadBinary(filePath, imageBytes);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<void> deleteFromBucket(List<String> filePaths) async {
     try {
       if (filePaths.isNotEmpty) {

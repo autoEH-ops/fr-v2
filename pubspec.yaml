@@ -1,4 +1,4 @@
-name: created_by_618_abdo
+name: attendance_system_fr_v3 
 description: "A new Flutter project."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
@@ -40,7 +40,7 @@ dependencies:
   url_launcher: any
   flutter_dotenv: ^5.2.1
   location: ^8.0.0
-  syncfusion_flutter_datepicker: ^29.1.39
+  calendar_date_picker2: ^2.0.0
 dev_dependencies:
   flutter_test:
     sdk: flutter

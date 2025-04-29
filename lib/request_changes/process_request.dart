@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../db/supabase_db_helper.dart';
+import '../leave_management/leave_approval.dart';
+import '../leave_management/leave_logic.dart';
 import '../model/account.dart';
+import '../model/leave.dart';
 import '../model/requests.dart';
 import 'account_edit_request.dart';
 import 'account_register_request.dart';
@@ -22,10 +25,12 @@ class _ProcessRequestState extends State<ProcessRequest> {
   late Account? requestedAccount;
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
   final RequestChangesLogic requestsLogic = RequestChangesLogic();
+  final LeaveLogic leaveLogic = LeaveLogic();
   bool _isLoading = true;
 
   List<Request> registerRequests = []; // only 'register_account'
   List<Request> editRequests = []; // only 'edit_account'
+  List<Leave> leaves = [];
 
   @override
   void initState() {
@@ -35,6 +40,8 @@ class _ProcessRequestState extends State<ProcessRequest> {
 
   Future<void> _loadRequests() async {
     final allRequests = await requestsLogic.getRequests(dbHelper: dbHelper);
+    final loadLeaves =
+        await leaveLogic.fetchAllLeaveRequest(dbHelper: dbHelper);
 
     setState(() {
       registerRequests = allRequests
@@ -43,6 +50,7 @@ class _ProcessRequestState extends State<ProcessRequest> {
       editRequests = allRequests
           .where((r) => r.requestCategory == 'account_edit')
           .toList();
+      leaves = loadLeaves;
       _isLoading = false;
     });
   }
@@ -63,13 +71,14 @@ class _ProcessRequestState extends State<ProcessRequest> {
             children: [
               _buildPageButton("Edit", 0),
               _buildPageButton("Register", 1),
+              _buildPageButton("Leave", 2)
             ],
           ),
         ),
       ),
       body: _isLoading
           ? Center(child: const CircularProgressIndicator())
-          : registerRequests.isEmpty && editRequests.isEmpty
+          : registerRequests.isEmpty && editRequests.isEmpty && leaves.isEmpty
               ? const Center(
                   child: Text("No requests found."),
                 )
@@ -88,6 +97,11 @@ class _ProcessRequestState extends State<ProcessRequest> {
                       account: widget.account!,
                       onRefresh: _loadRequests,
                     ),
+                    LeaveApproval(
+                      leaves: leaves,
+                      account: widget.account!,
+                      onRefresh: _loadRequests,
+                    )
                   ],
                 ),
     );

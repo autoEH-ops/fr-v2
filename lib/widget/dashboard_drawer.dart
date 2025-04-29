@@ -102,10 +102,9 @@ class DashboardDrawer {
               icon: Icons.logout,
               label: "Leave",
               color: Colors.blueGrey.shade600,
-              onTap: () => Navigator.pushAndRemoveUntil(
+              onTap: () => _navigateTo(
                 context,
-                MaterialPageRoute(builder: (_) => const LeaveDashboard()),
-                (route) => false,
+                LeaveDashboard(account: account),
               ),
             ),
             _drawerTile(

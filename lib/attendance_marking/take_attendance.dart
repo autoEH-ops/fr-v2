@@ -1,5 +1,4 @@
 import 'package:camera/camera.dart';
-import 'package:created_by_618_abdo/attendance_marking/attendance_logic.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
@@ -9,6 +8,7 @@ import '../model/recognition.dart';
 import '../model/account.dart';
 import '../attendance_dashboard/recognizer.dart';
 import '../model/setting.dart';
+import 'attendance_logic.dart';
 import 'camera_logic.dart';
 
 class TakeAttendance extends StatefulWidget {

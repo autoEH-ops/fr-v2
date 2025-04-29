@@ -1,11 +1,10 @@
-import 'package:created_by_618_abdo/attendance_dashboard/attendance_dashboard.dart';
-import 'package:created_by_618_abdo/attendance_marking/take_attendance.dart';
-
 import '../registration/register_attendance.dart';
 import 'Login/LoginPage.dart';
 import 'activity_logs/activity_logs.dart';
 import 'admin/admin_dashboard.dart';
+import 'attendance_dashboard/attendance_dashboard.dart';
 import 'attendance_history/attendance_records.dart';
+import 'attendance_marking/take_attendance.dart';
 import 'db/supabase_db_helper.dart';
 import 'geolocator/geolocator_service.dart';
 import 'manage_accounts/manage_accounts.dart';

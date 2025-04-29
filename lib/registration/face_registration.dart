@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:camera/camera.dart';
-import 'package:created_by_618_abdo/attendance_dashboard/attendance_dashboard.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
 
 import '../Login/LoginPage.dart';
+import '../attendance_dashboard/attendance_dashboard.dart';
 import '../main.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
