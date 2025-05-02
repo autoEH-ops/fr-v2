@@ -104,6 +104,7 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(_appBarTitle),
         centerTitle: true,
@@ -217,71 +218,4 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
             ),
     );
   }
-
-  Widget _buildRemarks() => Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 30),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Remarks",
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (isLate != null)
-              Text(
-                "Late: ", // Function to return message
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-            if (isLate != null)
-              Text(
-                "Check in on ${dashboardLogic.formatTime(isLate!.activityTime!)}",
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-            const SizedBox(height: 8),
-            if (checkOutEarly != null)
-              Text(
-                "Checking Out Early: ", // Function to return message
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-            if (checkOutEarly != null)
-              Text(
-                "Reasoning - ${checkOutEarly!.message}", // Function to return message
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.black87,
-                ),
-              ),
-          ],
-        ),
-      );
 }

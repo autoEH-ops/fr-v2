@@ -18,12 +18,12 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
   final RecordsLogic recordsLogic = RecordsLogic();
   List<Attendance> attendances = [];
   List<Attendance> upcomings = [];
-  Map<String, int> attendanceStats = {
-    "Fine": 0,
-    "Late": 0,
-    "Absent": 0,
-    "Left Early": 0,
-  };
+  // Map<String, int> attendanceStats = {
+  //   "Fine": 0,
+  //   "Late": 0,
+  //   "Absent": 0,
+  //   "Left Early": 0,
+  // };
   bool _isLoading = true;
 
   @override
@@ -40,11 +40,11 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
     setState(() {
       attendances = loadAttendances;
       upcomings = loadUpcomings;
-      attendanceStats = recordsLogic.getAttendanceStatistics(
-          attendances,
-          DateTime.now().year.toInt(),
-          DateTime.now().month.toInt(),
-          widget.account);
+      // attendanceStats = recordsLogic.getAttendanceStatistics(
+      //     attendances,
+      //     DateTime.now().year.toInt(),
+      //     DateTime.now().month.toInt(),
+      //     widget.account);
       _isLoading = false;
     });
   }
@@ -55,7 +55,9 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
     final upcomingLeaves = upcomings
         .where((a) => a.attendanceStatus == "on_leave" && a.leaveId != null)
         .toList();
-
+    final filteredUpcoming = upcomingLeaves.where((attendance) {
+      return attendance.attendanceTime!.isAfter(DateTime.now());
+    }).toList();
     return Scaffold(
         body: _isLoading
             ? Center(child: const CircularProgressIndicator())
@@ -81,26 +83,26 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                _buildStatCard(
-                                    'Fine',
-                                    attendanceStats["Fine"] ?? -5,
-                                    Colors.green),
-                                _buildStatCard(
-                                    'Late',
-                                    attendanceStats["Late"] ?? -5,
-                                    Colors.orange),
-                                _buildStatCard(
-                                    'Absent',
-                                    attendanceStats["Absent"] ?? -5,
-                                    Colors.red),
-                                _buildStatCard(
-                                    'Left Early',
-                                    attendanceStats["Left Early"] ?? -5,
-                                    Colors.purple),
+                                // _buildStatCard(
+                                //     'Fine',
+                                //     attendanceStats["Fine"] ?? -5,
+                                //     Colors.green),
+                                // _buildStatCard(
+                                //     'Late',
+                                //     attendanceStats["Late"] ?? -5,
+                                //     Colors.orange),
+                                // _buildStatCard(
+                                //     'Absent',
+                                //     attendanceStats["Absent"] ?? -5,
+                                //     Colors.red),
+                                // _buildStatCard(
+                                //     'Left Early',
+                                //     attendanceStats["Left Early"] ?? -5,
+                                //     Colors.purple),
                               ],
                             ),
                           ),
-                          if (upcomingLeaves.isNotEmpty) ...[
+                          if (filteredUpcoming.isNotEmpty) ...[
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16),
                               child: Text("Upcoming",
@@ -108,7 +110,7 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                                       fontWeight: FontWeight.bold,
                                       fontSize: 18)),
                             ),
-                            ...upcomingLeaves.map((attendance) {
+                            ...filteredUpcoming.map((attendance) {
                               final dateTimeInfo =
                                   recordsLogic.formatUpcomingTime(
                                       attendance.attendanceTime);
@@ -122,12 +124,20 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold, fontSize: 18)),
                           ),
-                          ...groupedAttendances.entries.map((entry) {
+                          ...groupedAttendances.entries.where((entry) {
+                            final entryDate = DateTime.parse(entry.key);
+                            return entryDate.isBefore(DateTime.now()) ||
+                                entryDate.isAtSameMomentAs(DateTime.now());
+                          }).map((entry) {
                             final checkIn = entry.value['check_in'];
                             final checkOut = entry.value['check_out'];
+                            final onLeave = entry.value['on_leave'];
+                            final upcoming = recordsLogic
+                                .formatUpcomingTime(DateTime.parse(entry.key));
                             final dateTimeInfo = recordsLogic
                                 .formatAttendanceTime(checkIn, checkOut);
-                            return _buildAttendanceCard(dateTimeInfo);
+                            return _buildAttendanceCard(
+                                dateTimeInfo, onLeave, upcoming);
                           }).toList(),
                         ],
                       ),
@@ -135,7 +145,8 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                   ));
   }
 
-  Widget _buildAttendanceCard(Map<String, dynamic> dateTimeInfo) {
+  Widget _buildAttendanceCard(Map<String, dynamic> dateTimeInfo, bool onLeave,
+      Map<String, String> upcoming) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: RoundedRectangleBorder(
@@ -143,69 +154,117 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
       ),
       elevation: 3,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Colored Day+Month box
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade100,
-                borderRadius: BorderRadius.circular(12),
+            if (!onLeave) ...[
+              // Colored Day+Month box
+              Container(
+                width: 80,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      "${dateTimeInfo['day']}",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    Text(
+                      "${dateTimeInfo['month']}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
+
+              // Check In
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "${dateTimeInfo['day']}",
-                    style: const TextStyle(
-                      fontSize: 20,
+                  const Text(
+                    'Check In',
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: Colors.green,
                     ),
                   ),
-                  Text(
-                    "${dateTimeInfo['month']}",
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.blueAccent,
-                    ),
-                  ),
+                  const SizedBox(height: 4),
+                  Text("${dateTimeInfo["checkIn"]}"),
                 ],
               ),
-            ),
 
-            // Check In
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Check In',
+              // Check Out
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Check Out',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text("${dateTimeInfo["checkOut"]}"),
+                ],
+              ),
+            ] else ...[
+              Container(
+                width: 80,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      "${upcoming['day']}",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    Text(
+                      "${upcoming['month']}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 16),
+
+              // "On Leave" text
+              Expanded(
+                child: Text(
+                  "On Leave",
+                  textAlign: TextAlign.center,
                   style: TextStyle(
+                    fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.green,
+                    color: Colors.orange.shade700,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text("${dateTimeInfo["checkIn"]}"),
-              ],
-            ),
-
-            // Check Out
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Check Out',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text("${dateTimeInfo["checkOut"]}"),
-              ],
-            ),
+              ),
+            ]
           ],
         ),
       ),
@@ -222,10 +281,11 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-            // Colored Day+Month box
+            // Colored Day+Month box with fixed width
             Container(
+              width: 80,
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
                 color: Colors.blue.shade100,
@@ -252,16 +312,17 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
               ),
             ),
 
-            // On Leave Display
+            const SizedBox(width: 16),
+
+            // "On Leave" text
             Expanded(
-              child: Center(
-                child: Text(
-                  "On Leave",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade700,
-                  ),
+              child: Text(
+                "On Leave",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade700,
                 ),
               ),
             ),

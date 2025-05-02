@@ -128,20 +128,20 @@ Future<MarkAttendanceResponse> markAttendance({
       'attendance_status': status,
     });
 
-    if (status == 'check_in' && now.hour <= 9) {
+    final cutOff = DateTime(now.year, now.month, now.day, 9, 0, 0);
+
+    if (status == 'check_in' && now.isBefore(cutOff)) {
       await insertActivity(dbHelper: dbHelper, row: {
         'activity': 'work',
         'account_id': account.id,
       });
-    } else if (status == 'check_in' &&
-        (now.hour > 9 || (now.hour == 9 && now.minute > 0))) {
+    } else if (status == 'check_in') {
       await insertActivity(dbHelper: dbHelper, row: {
         'activity': 'work',
         'account_id': account.id,
         'is_late': true,
       });
     }
-
     debugPrint("Attendance marked for ${account.name}");
 
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(

@@ -17,6 +17,8 @@ class InformationPage extends StatefulWidget {
 class _InformationPageState extends State<InformationPage> {
   List<Attendance> currentDayAttendance = [];
   Activity? latestActivity;
+  Activity? leaveEarly;
+  Activity? isLate;
   SupabaseDbHelper dbHelper = SupabaseDbHelper();
   DashboardLogic dashboardLogic = DashboardLogic();
   bool _isLoading = true;
@@ -32,10 +34,16 @@ class _InformationPageState extends State<InformationPage> {
         dbHelper: dbHelper, account: widget.account);
     final loadLatestActivity = await dashboardLogic.getLatestActivity(
         dbHelper: dbHelper, accountId: widget.account.id);
+    final loadIsLate =
+        await dashboardLogic.checkIfLate(dbHelper, widget.account);
+    final loadLeaveEarly =
+        await dashboardLogic.checkEarlyCheckOut(dbHelper, widget.account);
 
     setState(() {
       currentDayAttendance = loadCurrentDayAttendance;
       latestActivity = loadLatestActivity;
+      isLate = loadIsLate;
+      leaveEarly = loadLeaveEarly;
       _isLoading = false;
     });
   }
@@ -140,8 +148,7 @@ class _InformationPageState extends State<InformationPage> {
                   // Status and Activity Container
                   _buildStatus(),
                   // // Remarks Section
-                  // if (checkOutEarly != null || isLate != null)
-                  //   _buildRemarks(),
+                  if (leaveEarly != null || isLate != null) _buildRemarks(),
                 ],
               ),
             ),
@@ -245,6 +252,84 @@ class _InformationPageState extends State<InformationPage> {
                 ]
               ],
             ),
+          ],
+        ),
+      );
+
+  Widget _buildRemarks() => Container(
+        width: double.infinity,
+        margin: const EdgeInsets.only(bottom: 30),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Remarks",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (isLate != null) ...[
+              Text(
+                "Late: ", // Function to return message
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                "Check in on ${dashboardLogic.formatTime(isLate!.activityTime!)}",
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            if (leaveEarly != null) ...[
+              Text(
+                "Leave Early: ", // Function to return message
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+              Text(
+                "Reasoning - ${leaveEarly!.message}", // Function to return message
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            ]
+            // if (checkOutEarly != null)
+
+            // if (checkOutEarly != null)
+            //   Text(
+            //     "Reasoning - ${checkOutEarly!.message}", // Function to return message
+            //     style: const TextStyle(
+            //       fontSize: 15,
+            //       fontWeight: FontWeight.w500,
+            //       color: Colors.black87,
+            //     ),
+            //   ),
           ],
         ),
       );

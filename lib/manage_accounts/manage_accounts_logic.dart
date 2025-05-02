@@ -24,11 +24,11 @@ class ManageAccountsLogic {
     Activity? activity;
 
     try {
-      final response = await dbHelper.getLatestRowByField<Activity>(
+      final response = await dbHelper.getRowWhereFieldForCurrentDay<Activity>(
           table: 'activities',
           fieldName: 'account_id',
           fieldValue: account.id,
-          orderByField: 'activity_time',
+          dateTimeField: 'activity_time',
           fromMap: (row) => Activity.fromMap(row));
 
       activity = response;
