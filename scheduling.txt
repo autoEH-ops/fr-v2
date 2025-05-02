@@ -63,9 +63,9 @@ Deno.serve(async (req)=>{
 });
 
 # SQL Cron Scheduling #
-SELECT cron.schedule(
+SELECT cron.schedule( 
   'absent_maker', -- job name
-  '5 5 * * *',           -- cron schedule: 6:30 PM daily
+  '0 10 * * 1-6',           -- cron schedule: 5:05 AM every day except Sunday
   $$
   SELECT
     net.http_post(
@@ -141,3 +141,20 @@ Deno.serve(async (req)=>{
     status: 405
   });
 });
+
+# SQL Cron Scheduling #
+SELECT cron.schedule(
+  'daily_rapid_responder', -- job name
+  '0 10 * * *',           -- cron schedule: 6:30 PM daily
+  $$
+  SELECT
+    net.http_post(
+      url := 'https://wjxbrtxgxeyghxrkgmxz.supabase.co/functions/v1/rapid-responder',
+      headers := jsonb_build_object(
+        'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqeGJydHhneGV5Z2h4cmtnbXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5OTE2NzQsImV4cCI6MjA1OTU2NzY3NH0._tjqGu_9uRrbQRPNopdNbkajf3dbGhxOZNW2XNpKAD8',
+        'Content-Type', 'application/json'
+      ),
+      body := '{"name": "Functions"}'
+    );
+  $$
+);
