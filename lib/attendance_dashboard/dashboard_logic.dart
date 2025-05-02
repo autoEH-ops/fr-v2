@@ -7,6 +7,24 @@ import '../model/activity.dart';
 import '../model/attendance.dart';
 
 class DashboardLogic {
+  Future<List<Attendance>> fetchTodayAttendance(
+      {required SupabaseDbHelper dbHelper, required Account account}) async {
+    List<Attendance> attendance = [];
+    try {
+      final response = await dbHelper.getRowsWhereFieldForCurrentDay(
+          table: 'attendance_v2',
+          fieldName: 'account_id',
+          fieldValue: account.id,
+          dateTimeField: 'attendance_time',
+          fromMap: (row) => Attendance.fromMap(row));
+
+      attendance = response;
+    } catch (e) {
+      debugPrint("Failed to fetch today attendance: $e");
+    }
+    return attendance;
+  }
+
   Future<Attendance?> getLatestAttendance({
     required SupabaseDbHelper dbHelper,
     required int? accountId,
@@ -65,6 +83,29 @@ class DashboardLogic {
           'activities', account, DateTime.now(), Activity.fromMap);
     } catch (e) {
       return null;
+    }
+  }
+
+  String readableString(String role) {
+    String readableRole = role
+        .split('_')
+        .map((role) => role[0].toUpperCase() + role.substring(1).toLowerCase())
+        .join(' ');
+
+    return readableRole;
+  }
+
+  Color statusColor(String status) {
+    switch (status) {
+      case 'check_in':
+        return Colors.green;
+      case 'on_leave':
+        return Colors.deepOrange;
+      case 'absent':
+      case 'check_out':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 

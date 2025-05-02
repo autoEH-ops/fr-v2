@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:attendance_system_fr_v3/db/supabase_db_helper.dart';
 import 'package:calendar_date_picker2/calendar_date_picker2.dart';
@@ -11,13 +10,24 @@ import 'leave_logic.dart';
 
 class LeaveRequest extends StatefulWidget {
   final Account account;
+  final String title;
   final String leaveType;
-  final Future<void> Function()? onRefresh;
-  const LeaveRequest(
-      {super.key,
-      required this.account,
-      required this.leaveType,
-      this.onRefresh});
+  final CalendarDatePicker2Config datePickerConfig;
+  final Future<void> Function({
+    required DateTime startDate,
+    required DateTime endDate,
+    File? selectedImage,
+    String reason,
+  }) onSubmit;
+
+  const LeaveRequest({
+    super.key,
+    required this.account,
+    required this.title,
+    required this.leaveType,
+    required this.datePickerConfig,
+    required this.onSubmit,
+  });
 
   @override
   State<LeaveRequest> createState() => _LeaveRequestState();
@@ -76,35 +86,22 @@ class _LeaveRequestState extends State<LeaveRequest> {
       return;
     }
 
-    // Upload picture flow
-    String uniqueUrl =
-        '${widget.account.email}_${widget.leaveType}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    String filePath = 'public/$uniqueUrl';
-    Uint8List imageBytes;
-    String? attachmentUrl;
-    if (_selectedImage != null) {
-      imageBytes = await _selectedImage!.readAsBytes();
-      attachmentUrl = await leaveLogic.createAttachmentUrlInBucket(
-          dbHelper: dbHelper,
-          uniqueUrl: uniqueUrl,
-          filePath: filePath,
-          imageBytes: imageBytes);
+    if (widget.leaveType == "medical_leave" && _selectedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Must attached medical document'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
     }
 
-    debugPrint("Attachment URL: $attachmentUrl");
-    debugPrint("Start Date: $startDate");
-    debugPrint("End Date: $endDate");
-    debugPrint("Reason: $reason");
-    debugPrint("Image Selected: ${_selectedImage?.path ?? 'None'}");
-    // You can add validation or send this data to your backend here
-    await leaveLogic.createLeaveRequest(
-        dbHelper: dbHelper,
-        startTime: startDate,
-        endTime: endDate,
-        account: widget.account,
-        leaveType: widget.leaveType,
-        reason: reason,
-        attachmentUrl: attachmentUrl);
+    widget.onSubmit(
+        endDate: endDate,
+        startDate: startDate,
+        selectedImage: _selectedImage,
+        reason: reason);
 
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text("Leave request is pending. Wait for admin approval"),
@@ -113,10 +110,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
     ));
     Navigator.pop(context);
     Navigator.pop(context);
-
-    if (widget.onRefresh != null) {
-      await widget.onRefresh!();
-    }
   }
 
   @override
@@ -125,7 +118,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
     DateTime? endDate = _dates.length > 1 ? _dates.last : null;
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Leave Request"),
+        title: Text(widget.title),
         centerTitle: true,
         elevation: 0,
       ),
@@ -140,14 +133,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
             ),
             const SizedBox(height: 10),
             CalendarDatePicker2(
-              config: CalendarDatePicker2Config(
-                  firstDate: DateTime.now().add(const Duration(days: 14)),
-                  currentDate: DateTime.now().add(const Duration(days: 14)),
-                  lastDate: DateTime(2100),
-                  calendarType: CalendarDatePicker2Type.range,
-                  selectableDayPredicate: (DateTime day) {
-                    return day.weekday != DateTime.sunday;
-                  }),
+              config: widget.datePickerConfig,
               value: _dates,
               onValueChanged: (dates) {
                 setState(() {
@@ -184,8 +170,8 @@ class _LeaveRequestState extends State<LeaveRequest> {
               maxLines: 3,
             ),
             const SizedBox(height: 30),
-            const Text(
-              "Attachment (Optional)",
+            Text(
+              "Attachment ${widget.leaveType == "medical_leave" ? "" : "(Optional)"}",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),

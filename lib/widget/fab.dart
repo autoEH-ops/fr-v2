@@ -4,6 +4,7 @@ import '../attendance_marking/take_attendance.dart';
 import '../geolocator/geolocator_service.dart';
 import '../model/account.dart';
 import '../model/activity.dart';
+import '../model/attendance.dart';
 import '../model/setting.dart';
 
 class Fab {
@@ -14,15 +15,17 @@ class Fab {
     );
   }
 
-  Widget buildFab(
-          {required BuildContext context,
-          required List<Setting> systemSettings,
-          required GeolocatorService geolocatorService,
-          required Future<Activity?> Function() checkEarlyCheckOut,
-          required double locationLat,
-          required double locationLong,
-          required double approximateRange,
-          required Account account}) =>
+  Widget buildFab({
+    required BuildContext context,
+    required List<Setting> systemSettings,
+    required GeolocatorService geolocatorService,
+    required Future<Activity?> Function() checkEarlyCheckOut,
+    required Future<List<Attendance>> fetchTodayAttendance,
+    required double locationLat,
+    required double locationLong,
+    required double approximateRange,
+    required Account account,
+  }) =>
       FloatingActionButton(
         onPressed: () async {
           final isNearby = await geolocatorService.isWithinRange(
@@ -43,8 +46,22 @@ class Fab {
             return;
           }
 
+          final List<Attendance> latestAttendance = await fetchTodayAttendance;
+
+          if (latestAttendance.isNotEmpty &&
+              latestAttendance.first.attendanceStatus == "on_leave") {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content:
+                    Text("Enjoy your leave. No need to take attendance today."),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+            return;
+          }
+
           final Activity? checkoutEarly = await checkEarlyCheckOut();
-          debugPrint("get here");
           if (checkoutEarly?.message == null) {
             _navigateTo(
                 context,

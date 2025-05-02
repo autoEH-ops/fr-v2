@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../attendance_dashboard/attendance_dashboard.dart';
+import '../attendance_dashboard/dashboard_logic.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '../model/attendance.dart';
@@ -9,6 +10,7 @@ import '../model/setting.dart';
 import 'mark_attendance_response.dart';
 
 final supabase = Supabase.instance.client;
+final DashboardLogic dashboardLogic = DashboardLogic();
 Future<Account?> getAccountByName({
   required SupabaseDbHelper dbHelper,
   required String recognizedName,
@@ -43,11 +45,11 @@ Future<Attendance?> getLatestAttendance({
   const table = "attendance_v2";
 
   try {
-    return await dbHelper.getLatestRowByField<Attendance>(
+    return await dbHelper.getRowWhereFieldForCurrentDay<Attendance>(
       table: table,
       fieldName: 'account_id',
       fieldValue: accountId,
-      orderByField: 'attendance_time',
+      dateTimeField: 'attendance_time',
       fromMap: (data) => Attendance.fromMap(data),
     );
   } catch (e) {
@@ -101,7 +103,8 @@ Future<MarkAttendanceResponse> markAttendance({
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Current activity updated: $activity"),
+          content: Text(
+              "Current activity updated: ${dashboardLogic.readableString(activity)}"),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.green,
         ),
@@ -267,8 +270,8 @@ Future<String?> showManageActivityDialog(
                       },
                     ),
                     RadioListTile<String>(
-                      title: Text('Early Check Out'),
-                      value: 'early_check_out',
+                      title: Text('Early Leave'),
+                      value: 'early_leave',
                       groupValue: selectedActivity,
                       onChanged: (value) {
                         setState(() {
@@ -276,13 +279,13 @@ Future<String?> showManageActivityDialog(
                         });
                       },
                     ),
-                    if (selectedActivity == 'early_check_out') ...[
+                    if (selectedActivity == 'early_leave') ...[
                       SizedBox(height: 10),
                       TextField(
                         controller: reasonController,
                         maxLines: 2,
                         decoration: InputDecoration(
-                          labelText: 'Reason for Early Check Out',
+                          labelText: 'Reason for Early Leave',
                           border: OutlineInputBorder(),
                         ),
                       ),
@@ -301,7 +304,7 @@ Future<String?> showManageActivityDialog(
               ElevatedButton(
                 onPressed: () async {
                   if (selectedActivity != null) {
-                    if (selectedActivity != 'early_check_out') {
+                    if (selectedActivity != 'early_leave') {
                       Map<String, dynamic> row = {
                         'activity': selectedActivity,
                         'account_id': account.id,

@@ -243,6 +243,36 @@ class SupabaseDbHelper {
     }
   }
 
+  Future<T?> getRowWhereFieldForCurrentDay<T>({
+    required String table,
+    required String fieldName,
+    required dynamic fieldValue,
+    required String dateTimeField, // e.g., 'check_in_time'
+    required T Function(Map<String, dynamic>) fromMap,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final startOfDay = DateTime(now.year, now.month, now.day);
+      final startOfNextDay = startOfDay.add(const Duration(days: 1));
+
+      final response = await supabase
+          .from(table)
+          .select()
+          .eq(fieldName, fieldValue)
+          .gte(dateTimeField, startOfDay.toIso8601String())
+          .lt(dateTimeField, startOfNextDay.toIso8601String())
+          .maybeSingle();
+
+      if (response != null) {
+        return fromMap(response);
+      }
+
+      return null;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<List<T>> getRowsWhereFieldForCurrentDay<T>({
     required String table,
     required String fieldName,
@@ -261,6 +291,30 @@ class SupabaseDbHelper {
           .eq(fieldName, fieldValue)
           .gte(dateTimeField, startOfDay.toIso8601String())
           .lt(dateTimeField, startOfNextDay.toIso8601String());
+
+      return (response as List)
+          .map((row) => fromMap(row as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<T>> getRowsWhereFieldForUpcoming<T>({
+    required String table,
+    required String fieldName,
+    required dynamic fieldValue,
+    required String dateTimeField, // e.g., 'activity_time'
+    required T Function(Map<String, dynamic>) fromMap,
+  }) async {
+    try {
+      final now = DateTime.now();
+
+      final response = await supabase
+          .from(table)
+          .select()
+          .eq(fieldName, fieldValue)
+          .gte(dateTimeField, now.toIso8601String());
 
       return (response as List)
           .map((row) => fromMap(row as Map<String, dynamic>))

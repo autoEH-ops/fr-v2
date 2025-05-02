@@ -6,6 +6,23 @@ import '../model/account.dart';
 import '../model/attendance.dart';
 
 class RecordsLogic {
+  Future<List<Attendance>> fetchUpcomingOnLeave(
+      {required SupabaseDbHelper dbHelper, required Account account}) async {
+    List<Attendance> attendances = [];
+    try {
+      final response = await dbHelper.getRowsWhereFieldForUpcoming<Attendance>(
+          table: 'attendance_v2',
+          fieldName: 'account_id',
+          fieldValue: account.id,
+          dateTimeField: 'attendance_time',
+          fromMap: (row) => Attendance.fromMap(row));
+      attendances = response;
+    } catch (e) {
+      debugPrint("Failed to fetch upcoming on leave attendance: $e");
+    }
+    return attendances;
+  }
+
   Future<List<Attendance>> getAllAttendanceCurrentMonth(
       SupabaseDbHelper dbHelper, Account account) async {
     late List<Attendance> attendances;
@@ -47,6 +64,21 @@ class RecordsLogic {
       'month': month,
       'checkIn': formattedCheckIn,
       'checkOut': formattedCheckOut,
+    };
+  }
+
+  Map<String, String> formatUpcomingTime(DateTime? upcoming) {
+    // Use check-in as the reference for date formatting if available, else fallback to check-out
+    final dateTime = upcoming;
+    if (dateTime == null) {
+      return {'day': '', 'month': ''};
+    }
+    final day = DateFormat('dd').format(dateTime); // e.g., "01"
+    final month = DateFormat('MMMM').format(dateTime); // e.g., "April"
+
+    return {
+      'day': day,
+      'month': month,
     };
   }
 

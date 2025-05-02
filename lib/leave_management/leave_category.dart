@@ -1,6 +1,13 @@
-import 'package:flutter/material.dart';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:calendar_date_picker2/calendar_date_picker2.dart';
+import 'package:flutter/material.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
+
+import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
+import 'leave_logic.dart';
 import 'leave_request.dart';
 
 class LeaveCategory extends StatefulWidget {
@@ -13,6 +20,16 @@ class LeaveCategory extends StatefulWidget {
 }
 
 class _LeaveCategoryState extends State<LeaveCategory> {
+  SupabaseDbHelper dbHelper = SupabaseDbHelper();
+  LeaveLogic leaveLogic = LeaveLogic();
+  late TextRecognizer textRecognizer;
+
+  @override
+  void initState() {
+    super.initState();
+    textRecognizer = TextRecognizer();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -31,8 +48,10 @@ class _LeaveCategoryState extends State<LeaveCategory> {
                 MaterialPageRoute(
                     builder: (_) => LeaveRequest(
                           account: widget.account,
+                          title: "Annual Leave",
                           leaveType: 'annual_leave',
-                          onRefresh: widget.onRefresh,
+                          datePickerConfig: calendarConfigAnnualLeave(),
+                          onSubmit: onSubmitAnnualLeave,
                         )),
               );
             },
@@ -42,10 +61,17 @@ class _LeaveCategoryState extends State<LeaveCategory> {
             title: 'Medical Leave',
             icon: Icons.local_hospital,
             onTap: () {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (_) => const MedicalLeavePage()),
-              // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => LeaveRequest(
+                          account: widget.account,
+                          title: 'Medical Leave',
+                          leaveType: 'medical_leave',
+                          datePickerConfig: calendarConfigMedicalLeave(),
+                          onSubmit: onSubmitMedicalLeave,
+                        )),
+              );
             },
           ),
           _buildLeaveTile(
@@ -53,10 +79,17 @@ class _LeaveCategoryState extends State<LeaveCategory> {
             title: 'Emergency Leave',
             icon: Icons.warning,
             onTap: () {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (_) => const EmergencyLeavePage()),
-              // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => LeaveRequest(
+                          account: widget.account,
+                          title: 'Emergency Leave',
+                          leaveType: 'emergency_leave',
+                          datePickerConfig: calendarConfigEmergencyLeave(),
+                          onSubmit: onSubmitEmergencyLeave,
+                        )),
+              );
             },
           ),
         ],
@@ -77,5 +110,141 @@ class _LeaveCategoryState extends State<LeaveCategory> {
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
     );
+  }
+
+  CalendarDatePicker2Config calendarConfigAnnualLeave() =>
+      CalendarDatePicker2Config(
+          firstDate: DateTime.now().add(const Duration(days: 14)),
+          currentDate: DateTime.now().add(const Duration(days: 14)),
+          lastDate: DateTime(2100),
+          calendarType: CalendarDatePicker2Type.range,
+          selectableDayPredicate: (DateTime day) {
+            return day.weekday != DateTime.sunday;
+          });
+
+  Future<void> onSubmitAnnualLeave({
+    required DateTime startDate,
+    required DateTime endDate,
+    File? selectedImage,
+    String reason = '',
+  }) async {
+    // Upload picture flow
+    String leaveType = "annual_leave";
+    String uniqueUrl =
+        '${widget.account.email}_${leaveType}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    String filePath = 'public/$uniqueUrl';
+    Uint8List imageBytes;
+    String? attachmentUrl;
+    if (selectedImage != null) {
+      imageBytes = await selectedImage.readAsBytes();
+      attachmentUrl = await leaveLogic.createAttachmentUrlInBucket(
+          dbHelper: dbHelper,
+          uniqueUrl: uniqueUrl,
+          filePath: filePath,
+          imageBytes: imageBytes);
+    }
+    debugPrint("Attachment URL: $attachmentUrl");
+    debugPrint("Start Date: $startDate");
+    debugPrint("End Date: $endDate");
+    debugPrint("Reason: $reason");
+    debugPrint("Image Selected: ${selectedImage?.path ?? 'None'}");
+
+    await leaveLogic.createLeaveRequest(
+        dbHelper: dbHelper,
+        startTime: startDate,
+        endTime: endDate,
+        account: widget.account,
+        leaveType: leaveType,
+        reason: reason,
+        attachmentUrl: attachmentUrl);
+
+    if (widget.onRefresh != null) {
+      await widget.onRefresh!();
+    }
+  }
+
+  CalendarDatePicker2Config calendarConfigMedicalLeave() =>
+      CalendarDatePicker2Config(
+          firstDate: DateTime.now().subtract(Duration(days: 1)),
+          currentDate: DateTime.now(),
+          lastDate: DateTime.now().add(Duration(days: 2)),
+          calendarType: CalendarDatePicker2Type.range,
+          selectableDayPredicate: (DateTime day) {
+            return day.weekday != DateTime.sunday;
+          });
+
+  Future<void> onSubmitMedicalLeave({
+    required DateTime startDate,
+    required DateTime endDate,
+    File? selectedImage,
+    String reason = '',
+  }) async {
+    // Text Recognition
+    final InputImage inputImage = InputImage.fromFile(selectedImage!);
+    final RecognizedText recognizedText =
+        await textRecognizer.processImage(inputImage);
+
+    final String extractedText = recognizedText.text.toLowerCase();
+
+    //
+    // Upload picture flow
+    String leaveType = "annual_leave";
+    String uniqueUrl =
+        '${widget.account.email}_${leaveType}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    String filePath = 'public/$uniqueUrl';
+    Uint8List imageBytes;
+    String? attachmentUrl;
+    imageBytes = await selectedImage.readAsBytes();
+    attachmentUrl = await leaveLogic.createAttachmentUrlInBucket(
+        dbHelper: dbHelper,
+        uniqueUrl: uniqueUrl,
+        filePath: filePath,
+        imageBytes: imageBytes);
+    debugPrint("Attachment URL: $attachmentUrl");
+    debugPrint("Start Date: $startDate");
+    debugPrint("End Date: $endDate");
+    debugPrint("Reason: $reason");
+    debugPrint("Image Selected: ${selectedImage.path}");
+    if (extractedText.contains('sijil cuti sakit')) {
+      await leaveLogic.createLeaveRequestAndApproved(
+          dbHelper: dbHelper,
+          startTime: startDate,
+          endTime: endDate,
+          account: widget.account,
+          leaveType: leaveType,
+          reason: reason,
+          attachmentUrl: attachmentUrl);
+    } else {
+      await leaveLogic.createLeaveRequest(
+          dbHelper: dbHelper,
+          startTime: startDate,
+          endTime: endDate,
+          account: widget.account,
+          leaveType: leaveType,
+          reason: reason,
+          attachmentUrl: attachmentUrl);
+    }
+    if (widget.onRefresh != null) {
+      await widget.onRefresh!();
+    }
+  }
+
+  CalendarDatePicker2Config calendarConfigEmergencyLeave() =>
+      CalendarDatePicker2Config(
+          firstDate: DateTime.now(),
+          currentDate: DateTime.now(),
+          lastDate: DateTime.now().add(Duration(days: 1)),
+          calendarType: CalendarDatePicker2Type.range,
+          selectableDayPredicate: (DateTime day) {
+            return day.weekday != DateTime.sunday;
+          });
+
+  Future<void> onSubmitEmergencyLeave({
+    required DateTime startDate,
+    required DateTime endDate,
+    File? selectedImage,
+    String reason = '',
+  }) async {
+    debugPrint("Get to implementation later");
   }
 }

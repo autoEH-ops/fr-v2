@@ -12,6 +12,7 @@ import '../request_changes/request_status.dart';
 import '../widget/dashboard_drawer.dart';
 import '../widget/fab.dart';
 import 'dashboard_logic.dart';
+import 'information_page.dart';
 
 class AttendanceDashboard extends StatefulWidget {
   final Account account;
@@ -37,7 +38,7 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
 
   final DashboardLogic dashboardLogic = DashboardLogic();
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
-  Attendance? latestAttendance;
+  List<Attendance> latestAttendance = [];
   Activity? latestActivity;
   Activity? checkOutEarly;
   Activity? isLate;
@@ -80,39 +81,9 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
     return activity;
   }
 
-  String statusLogic(Attendance? attendance) {
-    String status = attendance!.attendanceStatus;
-
-    if (status == "check_in") {
-      return "Check In";
-    }
-    return "Check Out";
-  }
-
-  String activityLogic(Attendance attendance, Activity activity) {
-    String status = attendance.attendanceStatus;
-
-    if (status == "check_out") {
-      return "-";
-    }
-
-    return activity.activity
-        .split('_')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
-  }
-
-  Color statusColor(Attendance attendance) {
-    final status = attendance.attendanceStatus;
-    if (status == "check_in") {
-      return Colors.green;
-    }
-    return Colors.red;
-  }
-
   Future<void> loadLatestData() async {
-    final attendance = await dashboardLogic.getLatestAttendance(
-        dbHelper: dbHelper, accountId: widget.account.id);
+    final attendance = await dashboardLogic.fetchTodayAttendance(
+        dbHelper: dbHelper, account: widget.account);
     final activity = await dashboardLogic.getLatestActivity(
         dbHelper: dbHelper, accountId: widget.account.id);
     final activityMessage =
@@ -150,14 +121,17 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
           locationLong: locationLong,
           approximateRange: approximateRange),
       floatingActionButton: _fab.buildFab(
-          context: context,
-          systemSettings: widget.systemSettings,
-          geolocatorService: _geolocatorService,
-          checkEarlyCheckOut: checkEarlyCheckOut,
-          locationLat: locationLat,
-          locationLong: locationLong,
-          approximateRange: approximateRange,
-          account: widget.account),
+        context: context,
+        systemSettings: widget.systemSettings,
+        geolocatorService: _geolocatorService,
+        checkEarlyCheckOut: checkEarlyCheckOut,
+        locationLat: locationLat,
+        locationLong: locationLong,
+        approximateRange: approximateRange,
+        fetchTodayAttendance: dashboardLogic.fetchTodayAttendance(
+            dbHelper: dbHelper, account: widget.account),
+        account: widget.account,
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
         shape: const CircularNotchedRectangle(),
@@ -227,108 +201,8 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Profile Section
-                      Container(
-                        padding: const EdgeInsets.symmetric(vertical: 24),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black12,
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            CircleAvatar(
-                              radius: 45,
-                              backgroundColor: Colors.indigo.shade600,
-                              backgroundImage: widget.account.imageUrl != null
-                                  ? NetworkImage(widget.account.imageUrl!)
-                                  : null,
-                              child: widget.account.imageUrl == null
-                                  ? Text(
-                                      widget.account.name[0].toUpperCase(),
-                                      style: const TextStyle(
-                                        fontSize: 40,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              widget.account.name,
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              roleReadableFormat(widget.account.role),
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.email,
-                                          color: Colors.grey),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          widget.account.email,
-                                          style: const TextStyle(fontSize: 15),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.phone,
-                                          color: Colors.grey),
-                                      const SizedBox(width: 8),
-                                      Flexible(
-                                        child: Text(
-                                          widget.account.phone,
-                                          style: const TextStyle(fontSize: 15),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 40),
-                      // Status and Activity Container
-                      _buildStatus(),
-                      // Remarks Section
-                      if (checkOutEarly != null || isLate != null)
-                        _buildRemarks(),
-                    ],
-                  ),
+                InformationPage(
+                  account: widget.account,
                 ),
                 AttendanceRecords(account: widget.account),
                 ActivityLogs(account: widget.account),
@@ -343,72 +217,6 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
             ),
     );
   }
-
-  Widget _buildStatus() => Container(
-        width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 30),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: latestAttendance != null && latestActivity != null
-            ? Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Status",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        "${statusLogic(latestAttendance)}",
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: statusColor(latestAttendance!),
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "Activity",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Text(
-                        activityLogic(latestAttendance!, latestActivity!),
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              )
-            : Center(child: Text("Please check in first.")),
-      );
 
   Widget _buildRemarks() => Container(
         width: double.infinity,
@@ -476,17 +284,4 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
           ],
         ),
       );
-
-  String roleReadableFormat(String role) {
-    switch (role) {
-      case "super_admin":
-        return "Super Admin";
-      case "admin":
-        return "Admin";
-      case "security":
-        return "Security";
-      default:
-        return "Viewer";
-    }
-  }
 }

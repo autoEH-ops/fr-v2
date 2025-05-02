@@ -49,6 +49,31 @@ class LeaveLogic {
     }
   }
 
+  Future<void> createLeaveRequestAndApproved(
+      {required SupabaseDbHelper dbHelper,
+      required DateTime startTime,
+      required DateTime endTime,
+      required Account account,
+      required String leaveType,
+      required String reason,
+      required String? attachmentUrl}) async {
+    try {
+      Map<String, dynamic> row = {
+        'account_id': account.id,
+        'leave_type': leaveType,
+        'start_date': startTime.toIso8601String(),
+        'end_date': endTime.toIso8601String(),
+        'leave_reason': reason,
+        'attachment_url': attachmentUrl,
+        'leave_status': 'approved',
+        'approved_at': DateTime.now().toUtc().toIso8601String(),
+      };
+      await dbHelper.insert('leaves', row);
+    } catch (e) {
+      debugPrint("Failed to create leave request: $e");
+    }
+  }
+
   Future<Account?> fetchAccount(
       {required SupabaseDbHelper dbHelper, required Leave leave}) async {
     Account? account;
