@@ -1,0 +1,143 @@
+# absent_maker #
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js";
+const supabaseUrl = Deno.env.get("project_url");
+const supabaseServiceRoleKey = Deno.env.get("anon_key");
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+async function checkOutUsers() {
+  const logs = [];
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    logs.push(`Starting attendance check for ${now.toISOString()}`);
+    // Step 1: Check if there are any attendance records for today
+    const { data: attendanceRecords, error: attendanceError } = await supabase.from("attendance_v2").select("id, account_id").gte("attendance_time", startOfDay.toISOString()).lte("attendance_time", endOfDay.toISOString());
+    if (attendanceError) {
+      logs.push("❌ Error fetching attendance records: " + attendanceError.message);
+      return logs.join("\n");
+    }
+    // Step 2: Find users who have no attendance record for today
+    const { data: allUsers, error: usersError } = await supabase.from("accounts").select("id"); // assuming there's a "users" table with all user IDs
+    if (usersError) {
+      logs.push("❌ Error fetching users: " + usersError.message);
+    } else {
+      for (const user of allUsers){
+        if (user.id === -1) continue;
+        const userAttendance = attendanceRecords.filter((record)=>record.account_id === user.id);
+        // If no attendance record for the user today, create an "absent" record
+        if (userAttendance.length === 0) {
+          const { error: insertError } = await supabase.from("attendance_v2").insert([
+            {
+              account_id: user.id,
+              attendance_status: "absent",
+              attendance_time: now.toISOString()
+            }
+          ]);
+          if (insertError) {
+            logs.push(`❌ Failed to mark absent for account_id ${user.id}: ${insertError.message}`);
+          } else {
+            logs.push(`✅ Marked account_id ${user.id} as absent.`);
+          }
+        }
+      }
+    }
+    logs.push("✅ Attendance check and update process completed.");
+  } catch (error) {
+    logs.push("🔥 Unhandled error: " + error.message);
+  }
+  return logs.join("\n");
+}
+Deno.serve(async (req)=>{
+  if (req.method === "POST") {
+    const resultLog = await checkOutUsers();
+    return new Response(resultLog, {
+      status: 200
+    }); // Always return 200, but include logs
+  }
+  return new Response("Method not allowed", {
+    status: 405
+  });
+});
+
+# SQL Cron Scheduling #
+SELECT cron.schedule(
+  'absent_maker', -- job name
+  '5 5 * * *',           -- cron schedule: 6:30 PM daily
+  $$
+  SELECT
+    net.http_post(
+      url := 'https://wjxbrtxgxeyghxrkgmxz.supabase.co/functions/v1/absent-maker',
+      headers := jsonb_build_object(
+        'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqeGJydHhneGV5Z2h4cmtnbXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5OTE2NzQsImV4cCI6MjA1OTU2NzY3NH0._tjqGu_9uRrbQRPNopdNbkajf3dbGhxOZNW2XNpKAD8',
+        'Content-Type', 'application/json'
+      ),
+      body := '{"name": "Functions"}'
+    );
+  $$
+);
+
+# check_out_scheduler #
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js";
+const supabaseUrl = Deno.env.get("project_url");
+const supabaseServiceRoleKey = Deno.env.get("anon_key");
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+async function checkOutUsers() {
+  const logs = [];
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    logs.push(`Starting check-out process at ${now.toISOString()}`);
+    // Step 1: Find all check-ins for today
+    const { data: checkIns, error: checkInError } = await supabase.from("attendance_v2").select("id, account_id").eq("attendance_status", "check_in").gte("attendance_time", startOfDay.toISOString()).lte("attendance_time", endOfDay.toISOString());
+    if (checkInError) {
+      logs.push("❌ Error fetching check-ins: " + checkInError.message);
+      return logs.join("\n");
+    }
+    logs.push(`✅ Found ${checkIns.length} check-ins today.`);
+    for (const record of checkIns){
+      const { data: checkOuts, error: checkOutCheckError } = await supabase.from("attendance_v2").select("id").eq("account_id", record.account_id).eq("attendance_status", "check_out").gte("attendance_time", startOfDay.toISOString()).lte("attendance_time", endOfDay.toISOString());
+      if (checkOutCheckError) {
+        logs.push(`❌ Error checking check-out for account_id ${record.account_id}: ${checkOutCheckError.message}`);
+        continue;
+      }
+      if (checkOuts.length === 0) {
+        const { error: insertError } = await supabase.from("attendance_v2").insert([
+          {
+            account_id: record.account_id,
+            attendance_status: "check_out",
+            attendance_time: now.toISOString()
+          }
+        ]);
+        if (insertError) {
+          logs.push(`❌ Failed to check-out account_id ${record.account_id}: ${insertError.message}`);
+        } else {
+          logs.push(`✅ Checked out account_id ${record.account_id}`);
+        }
+      } else {
+        logs.push(`ℹ️ Account_id ${record.account_id} already checked out.`);
+      }
+    }
+    logs.push("✅ Check-out process completed.");
+  } catch (error) {
+    logs.push("🔥 Unhandled error: " + error.message);
+  }
+  return logs.join("\n");
+}
+Deno.serve(async (req)=>{
+  if (req.method === "POST") {
+    const resultLog = await checkOutUsers();
+    return new Response(resultLog, {
+      status: 200
+    }); // Always return 200, but include logs
+  }
+  return new Response("Method not allowed", {
+    status: 405
+  });
+});

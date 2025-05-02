@@ -205,7 +205,17 @@ class _LeaveCategoryState extends State<LeaveCategory> {
     debugPrint("End Date: $endDate");
     debugPrint("Reason: $reason");
     debugPrint("Image Selected: ${selectedImage.path}");
-    if (extractedText.contains('sijil cuti sakit')) {
+    List<String> autoApproveKeywords = [
+      'sijil cuti sakit',
+      'medical certification',
+      'surat doktor',
+      'klinik kesihatan'
+    ];
+
+    bool shouldAutoApprove = autoApproveKeywords
+        .any((keyword) => extractedText.toLowerCase().contains(keyword));
+
+    if (shouldAutoApprove) {
       await leaveLogic.createLeaveRequestAndApproved(
           dbHelper: dbHelper,
           startTime: startDate,

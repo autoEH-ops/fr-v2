@@ -104,7 +104,6 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
-      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         title: Text(_appBarTitle),
         centerTitle: true,

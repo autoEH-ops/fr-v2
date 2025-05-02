@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -34,27 +33,21 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
   late List<Face> faces = [];
   final dbHelper = SupabaseDbHelper();
 
-  //TODO declare face detector
   late FaceDetector detector;
 
-  //TODO declare face recognizer
   late Recognizer recognizer;
 
   @override
   void initState() {
     super.initState();
 
-    //TODO initialize face detector
     detector = FaceDetector(
         options: FaceDetectorOptions(performanceMode: FaceDetectorMode.fast));
-    //TODO initialize face recognizer
     recognizer = Recognizer();
 
-    //TODO initialize camera footage
     initializeCamera();
   }
 
-  //TODO code to initialize the camera feed
   initializeCamera() async {
     controller = CameraController(description, ResolutionPreset.max);
     await controller.initialize().then((_) {
@@ -68,7 +61,6 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
     });
   }
 
-  //TODO close all resources
   @override
   void dispose() {
     if (controller.value.isInitialized) {
@@ -81,18 +73,15 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
     super.dispose();
   }
 
-  //TODO face detection on a frame
   CameraImage? frame;
   doFaceDetectionOnFrame() async {
     try {
-      //TODO convert frame into InputImage format
       InputImage? inputImage = getInputImage();
 
       debugPrint("Input image params: "
           "Rotation: ${inputImage?.metadata?.rotation}, "
           "Format: ${inputImage?.metadata?.format}, "
           "Size: ${inputImage?.metadata?.size}");
-      //TODO pass InputImage to face detection model and detect faces
 
       if (inputImage != null) {
         faces = await detector.processImage(inputImage);
@@ -101,9 +90,8 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
       for (Face face in faces) {
         debugPrint("Face location: ${face.boundingBox}");
 
-        print("Detected ${faces.length} face(s)");
+        debugPrint("Detected ${faces.length} face(s)");
       }
-      //TODO perform face recognition on detected faces
     } catch (e) {
       debugPrint("Something went wrong in doFaceDetectionOnFrame: $e");
     }
@@ -112,26 +100,22 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
   }
 
   img.Image? image;
-  // TODO perform Face Recognition
   performFaceRecognition(List<Face> faces) async {
     if (hasRecognizedFace) return;
     recognitions.clear();
 
-    //TODO convert CameraImage to Image and rotate it so that our frame will be in a portrait
     image = convertYUV420ToImage(frame!);
     image = img.copyRotate(image!,
         angle: camDirec == CameraLensDirection.front ? 270 : 90);
 
     for (Face face in faces) {
       Rect faceRect = face.boundingBox;
-      //TODO crop face
       img.Image croppedFace = img.copyCrop(image!,
           x: faceRect.left.toInt(),
           y: faceRect.top.toInt(),
           width: faceRect.width.toInt(),
           height: faceRect.height.toInt());
 
-      //TODO pass cropped face to face recognition model
       Recognition recognition =
           recognizer.recognize(croppedFace, face.boundingBox);
       if (recognition.distance > 1) {
@@ -142,7 +126,6 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
 
       await controller.stopImageStream();
       await Future.delayed(Duration(milliseconds: 500));
-      //TODO show face registration dialogue
       showFaceRegistrationDialog(croppedFace, recognition);
       break;
     }
@@ -152,7 +135,6 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
     });
   }
 
-  //TODO Face Registration Dialogue
   void showFaceRegistrationDialog(
       img.Image croppedFace, Recognition recognition) {
     showDialog(
@@ -254,7 +236,6 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
     );
   }
 
-  // TODO method to convert CameraImage to Image
   img.Image convertYUV420ToImage(CameraImage cameraImage) {
     final width = cameraImage.width;
     final height = cameraImage.height;
@@ -297,8 +278,6 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
         ((g << 8) & 0xff00) |
         (r & 0xff);
   }
-
-  // //TODO convert CameraImage to InputImage
 
   final _orientations = {
     DeviceOrientation.portraitUp: 0,
@@ -449,7 +428,6 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
     size = MediaQuery.of(context).size;
 
     if (controller != null) {
-      //TODO View for displaying the live camera footage
       stackChildren.add(
         Positioned.fill(
           child: Container(
