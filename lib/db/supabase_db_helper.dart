@@ -58,7 +58,7 @@ class SupabaseDbHelper {
           .update(row)
           .eq(fieldName, fieldValue)
           .select();
-      debugPrint("This is the updated data: $data['name']");
+      debugPrint("This is the updated data: $data");
     } catch (e) {
       rethrow;
     }

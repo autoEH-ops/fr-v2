@@ -12,6 +12,7 @@ class LeaveRequest extends StatefulWidget {
   final Account account;
   final String title;
   final String leaveType;
+  final int? annualLeaveUsed;
   final CalendarDatePicker2Config datePickerConfig;
   final Future<void> Function({
     required DateTime startDate,
@@ -27,6 +28,7 @@ class LeaveRequest extends StatefulWidget {
     required this.leaveType,
     required this.datePickerConfig,
     required this.onSubmit,
+    this.annualLeaveUsed,
   });
 
   @override
@@ -72,6 +74,21 @@ class _LeaveRequestState extends State<LeaveRequest> {
           backgroundColor: Colors.red,
         ),
       );
+      return;
+    }
+    int requestedDays = leaveLogic.daysExcludingSundays(startDate, endDate);
+    if (widget.leaveType == "annual_leave" &&
+        requestedDays > widget.annualLeaveUsed!) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(
+            "Requested leave exceed amount left: ${widget.annualLeaveUsed} day(s) left"),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ));
+
+      setState(() {
+        _dates = [];
+      });
       return;
     }
 

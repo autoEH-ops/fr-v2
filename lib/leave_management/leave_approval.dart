@@ -31,6 +31,10 @@ class _LeaveApprovalState extends State<LeaveApproval> {
       // Create New Attendances - attendance_status = on_leave
       await leaveLogic.createNewOnLeaveAttendances(
           dbHelper: dbHelper, leave: request);
+
+      // Update annual leave amount
+      await leaveLogic.updateAnnualLeaveDays(
+          dbHelper: dbHelper, accountId: request.accountId, leave: request);
       // Update Leave Status to Approved
       await leaveLogic.updateApprovalStatus(
           dbHelper: dbHelper,

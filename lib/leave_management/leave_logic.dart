@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '../model/leave.dart';
+import '../model/metric.dart';
 
 class LeaveLogic {
   Future<String> createAttachmentUrlInBucket(
@@ -104,6 +105,31 @@ class LeaveLogic {
     }
   }
 
+  Future<void> updateAnnualLeaveDays(
+      {required SupabaseDbHelper dbHelper,
+      required int accountId,
+      required Leave leave}) async {
+    // Update Annual Leave days
+    int annualLeave =
+        await fetchAccountAnnualLeave(dbHelper: dbHelper, accountId: accountId);
+
+    DateTime startDate = leave.startDate;
+    DateTime endDate = leave.endDate;
+    final requestedDays = daysExcludingSundays(startDate, endDate);
+
+    int updatedAnnualLeaveAmount = annualLeave - requestedDays;
+    Map<String, dynamic> row = {
+      'annual_leave_entitlement': updatedAnnualLeaveAmount,
+    };
+
+    try {
+      await dbHelper.updateWhere(
+          'employee_metrics', 'account_id', accountId, row);
+    } catch (e) {
+      debugPrint("Failed to update annual leave days: $e");
+    }
+  }
+
   Future<void> createNewOnLeaveAttendances(
       {required SupabaseDbHelper dbHelper, required Leave leave}) async {
     DateTime startDate = leave.startDate;
@@ -156,6 +182,25 @@ class LeaveLogic {
     return leaves;
   }
 
+  Future<int> fetchAccountAnnualLeave(
+      {required SupabaseDbHelper dbHelper, required int accountId}) async {
+    Metric? employeeMetric;
+    try {
+      final response = await dbHelper.getRowByField(
+          'employee_metrics', 'account_id', accountId, Metric.fromMap);
+      employeeMetric = response;
+    } catch (e) {
+      debugPrint("Failed to fetch account annual leave: $e");
+    }
+    int annualLeave;
+    if (employeeMetric != null && employeeMetric.annualLeave != null) {
+      annualLeave = employeeMetric.annualLeave!;
+      return annualLeave;
+    } else {
+      return -1;
+    }
+  }
+
   Future<List<Leave>> fetchAllLeaveRequest(
       {required SupabaseDbHelper dbHelper}) async {
     List<Leave> leaves = [];
@@ -167,6 +212,20 @@ class LeaveLogic {
       debugPrint("Failed to fetch all leave request: $e");
     }
     return leaves;
+  }
+
+  int daysExcludingSundays(DateTime start, DateTime end) {
+    int count = 0;
+    DateTime current = start;
+
+    while (!current.isAfter(end)) {
+      if (current.weekday != DateTime.sunday) {
+        count++;
+      }
+
+      current = current.add(Duration(days: 1));
+    }
+    return count;
   }
 
   String readableStrings(String word) {

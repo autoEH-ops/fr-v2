@@ -7,6 +7,7 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
+import '../model/leave.dart';
 import 'leave_logic.dart';
 import 'leave_request.dart';
 
@@ -20,6 +21,8 @@ class LeaveCategory extends StatefulWidget {
 }
 
 class _LeaveCategoryState extends State<LeaveCategory> {
+  int annualLeaveUsed = 0;
+  bool _isLoading = true;
   SupabaseDbHelper dbHelper = SupabaseDbHelper();
   LeaveLogic leaveLogic = LeaveLogic();
   late TextRecognizer textRecognizer;
@@ -28,6 +31,17 @@ class _LeaveCategoryState extends State<LeaveCategory> {
   void initState() {
     super.initState();
     textRecognizer = TextRecognizer();
+    loadLatestData();
+  }
+
+  Future<void> loadLatestData() async {
+    final loadAnnualLeaveUsed = await leaveLogic.fetchAccountAnnualLeave(
+        dbHelper: dbHelper, accountId: widget.account.id!);
+
+    setState(() {
+      annualLeaveUsed = loadAnnualLeaveUsed;
+      _isLoading = false;
+    });
   }
 
   @override
@@ -36,77 +50,97 @@ class _LeaveCategoryState extends State<LeaveCategory> {
       appBar: AppBar(
         title: const Text('Leave Categories'),
       ),
-      body: ListView(
-        children: [
-          _buildLeaveTile(
-            context,
-            title: 'Annual Leave',
-            icon: Icons.calendar_today,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => LeaveRequest(
-                          account: widget.account,
-                          title: "Annual Leave",
-                          leaveType: 'annual_leave',
-                          datePickerConfig: calendarConfigAnnualLeave(),
-                          onSubmit: onSubmitAnnualLeave,
-                        )),
-              );
-            },
-          ),
-          _buildLeaveTile(
-            context,
-            title: 'Medical Leave',
-            icon: Icons.local_hospital,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => LeaveRequest(
-                          account: widget.account,
-                          title: 'Medical Leave',
-                          leaveType: 'medical_leave',
-                          datePickerConfig: calendarConfigMedicalLeave(),
-                          onSubmit: onSubmitMedicalLeave,
-                        )),
-              );
-            },
-          ),
-          _buildLeaveTile(
-            context,
-            title: 'Emergency Leave',
-            icon: Icons.warning,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                    builder: (_) => LeaveRequest(
-                          account: widget.account,
-                          title: 'Emergency Leave',
-                          leaveType: 'emergency_leave',
-                          datePickerConfig: calendarConfigEmergencyLeave(),
-                          onSubmit: onSubmitEmergencyLeave,
-                        )),
-              );
-            },
-          ),
-        ],
-      ),
+      body: _isLoading
+          ? Center(child: const CircularProgressIndicator())
+          : ListView(
+              children: [
+                _buildLeaveTile(
+                  context,
+                  title: 'Annual Leave',
+                  subtitle: /*_isLoadingAnnualLeave
+                ? 'Loading...'
+                : */
+                      '$annualLeaveUsed more days',
+                  icon: Icons.calendar_today,
+                  onTap: () {
+                    if (annualLeaveUsed == 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Annual leave used up.'),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                      return;
+                    }
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => LeaveRequest(
+                                account: widget.account,
+                                title: "Annual Leave",
+                                leaveType: 'annual_leave',
+                                datePickerConfig: calendarConfigAnnualLeave(),
+                                annualLeaveUsed: annualLeaveUsed,
+                                onSubmit: onSubmitAnnualLeave,
+                              )),
+                    );
+                  },
+                ),
+                _buildLeaveTile(
+                  context,
+                  title: 'Medical Leave',
+                  icon: Icons.local_hospital,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => LeaveRequest(
+                                account: widget.account,
+                                title: 'Medical Leave',
+                                leaveType: 'medical_leave',
+                                datePickerConfig: calendarConfigMedicalLeave(),
+                                onSubmit: onSubmitMedicalLeave,
+                              )),
+                    );
+                  },
+                ),
+                _buildLeaveTile(
+                  context,
+                  title: 'Emergency Leave',
+                  icon: Icons.warning,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => LeaveRequest(
+                                account: widget.account,
+                                title: 'Emergency Leave',
+                                leaveType: 'emergency_leave',
+                                datePickerConfig:
+                                    calendarConfigEmergencyLeave(),
+                                onSubmit: onSubmitEmergencyLeave,
+                              )),
+                    );
+                  },
+                ),
+              ],
+            ),
     );
   }
 
   Widget _buildLeaveTile(BuildContext context,
       {required String title,
       required IconData icon,
-      required VoidCallback onTap}) {
+      required VoidCallback onTap,
+      String? subtitle}) {
     return ListTile(
       leading: CircleAvatar(
-        child: Icon(icon, color: Colors.white),
         backgroundColor: Theme.of(context).primaryColor,
+        child: Icon(icon, color: Colors.white),
       ),
       title: Text(title),
+      subtitle: subtitle != null ? Text(subtitle) : null,
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
     );
@@ -128,7 +162,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
     File? selectedImage,
     String reason = '',
   }) async {
-    // Upload picture flow
+    // Upload picture
     String leaveType = "annual_leave";
     String uniqueUrl =
         '${widget.account.email}_${leaveType}_${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -143,12 +177,8 @@ class _LeaveCategoryState extends State<LeaveCategory> {
           filePath: filePath,
           imageBytes: imageBytes);
     }
-    debugPrint("Attachment URL: $attachmentUrl");
-    debugPrint("Start Date: $startDate");
-    debugPrint("End Date: $endDate");
-    debugPrint("Reason: $reason");
-    debugPrint("Image Selected: ${selectedImage?.path ?? 'None'}");
 
+    // Create leave request
     await leaveLogic.createLeaveRequest(
         dbHelper: dbHelper,
         startTime: startDate,
