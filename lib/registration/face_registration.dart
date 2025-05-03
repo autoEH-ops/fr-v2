@@ -196,6 +196,10 @@ class _FaceRegistrationState extends State<FaceRegistration> {
                         'phone': widget.account.phone,
                         'email': widget.account.email,
                         'role': widget.account.role,
+                        'start_date':
+                            widget.account.startDate.toUtc().toIso8601String(),
+                        'end_date':
+                            widget.account.endDate!.toUtc().toIso8601String(),
                       };
                       try {
                         await dbHelper.insert('accounts', row);

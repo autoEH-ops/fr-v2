@@ -218,7 +218,6 @@ class LeaveLogic {
       final response = await dbHelper.getRowsWhereField(
           'leaves', 'account_id', account.id, (row) => Leave.fromMap(row));
       leaves = response;
-      debugPrint(leaves.toList().toString());
     } catch (e) {
       debugPrint("Failed to fetch account leave requests: $e");
     }

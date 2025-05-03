@@ -22,6 +22,8 @@ class _ManageSettingsState extends State<ManageSettings> {
   bool _isLoading = true;
   final List<TextEditingController> _controllers = [];
   String location = 'Not set';
+  List<String> ocrTerms = [];
+  Setting? ocrSetting;
 
   @override
   void initState() {
@@ -33,8 +35,22 @@ class _ManageSettingsState extends State<ManageSettings> {
     final loadSettings =
         await settingsLogic.getAllSystemSettings(dbHelper: dbHelper);
 
+    List<String> loadOcrTerms = [];
+    Setting? loadOcrSetting;
+
+    for (int i = 0; i < loadSettings.length; i++) {
+      if (loadSettings[i].setting == 'ocr_dictionary') {
+        loadOcrSetting = loadSettings[i];
+        loadOcrTerms =
+            loadSettings[i].value.split('|').map((s) => s.trim()).toList();
+        break;
+      }
+    }
+
     setState(() {
       systemSettings = loadSettings;
+      ocrSetting = loadOcrSetting;
+      ocrTerms = loadOcrTerms;
       _controllers.addAll(
           systemSettings.map((s) => TextEditingController(text: s.value)));
       _isLoading = false;
@@ -77,22 +93,40 @@ class _ManageSettingsState extends State<ManageSettings> {
     setState(() {
       _isLoading = true;
     });
+    for (var entry in systemSettings.asMap().entries) {
+      final setting = entry.value;
 
-    try {
-      settingsLogic.updateSystemSettings(
+      if (setting.setting != 'ocr_dictionary') {
+        settingsLogic.updateSystemSettings(
           dbHelper: dbHelper,
           systemSettings: systemSettings,
           controllers: _controllers,
-          account: widget.account);
-    } catch (e) {
-      debugPrint('Failed to update sytem settings: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All settings saved to Supabase')),
-      );
+          account: widget.account,
+        );
+      } else {
+        final updatedOcrValue = ocrTerms
+            .map((term) => term.trim())
+            .where((term) => term.isNotEmpty)
+            .join('|');
+
+        try {
+          debugPrint("updatedOcrValue");
+          await dbHelper.updateWhere('system_settings', 'id', ocrSetting!.id, {
+            'value': updatedOcrValue,
+            'last_updated': DateTime.now().toUtc().toIso8601String(),
+            'updated_by': widget.account.id
+          });
+        } catch (e) {
+          debugPrint("Failed to update OCR Dictionary: $e ");
+        } finally {
+          setState(() {
+            _isLoading = false;
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('All settings saved to Supabase')),
+          );
+        }
+      }
     }
   }
 
@@ -114,34 +148,116 @@ class _ManageSettingsState extends State<ManageSettings> {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height * 0.4,
+                      Expanded(
                         child: ListView.builder(
                           itemCount: systemSettings.length,
                           itemBuilder: (context, index) {
-                            return Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 8.0),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    flex: 2,
-                                    child: Text(
-                                        "${settingsLogic.formatReadableSetting(systemSettings[index].setting)} : "),
-                                  ),
-                                  Expanded(
-                                    flex: 3,
-                                    child: TextField(
-                                      controller: _controllers[index],
-                                      decoration: const InputDecoration(
-                                        border: OutlineInputBorder(),
-                                        isDense: true,
+                            if (systemSettings[index].setting !=
+                                'ocr_dictionary') {
+                              return Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 8.0),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      flex: 2,
+                                      child: Text(
+                                          "${settingsLogic.formatReadableSetting(systemSettings[index].setting)} : "),
+                                    ),
+                                    Expanded(
+                                      flex: 3,
+                                      child: TextField(
+                                        controller: _controllers[index],
+                                        decoration: const InputDecoration(
+                                          border: OutlineInputBorder(),
+                                          isDense: true,
+                                        ),
                                       ),
                                     ),
+                                  ],
+                                ),
+                              );
+                            } else {
+                              return Card(
+                                elevation: 2,
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                                child: Theme(
+                                  data: Theme.of(context).copyWith(
+                                      dividerColor: Colors.transparent),
+                                  child: ExpansionTile(
+                                    leading: const Icon(Icons.text_snippet,
+                                        color: Colors.blueAccent),
+                                    title: const Text(
+                                      "OCR Dictionary",
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                          color: Colors.black),
+                                    ),
+                                    childrenPadding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 8),
+                                    children: [
+                                      ListView.builder(
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        itemCount: ocrTerms.length,
+                                        itemBuilder: (context, i) {
+                                          return Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                vertical: 4),
+                                            child: Row(
+                                              children: [
+                                                Expanded(
+                                                  child: TextFormField(
+                                                    initialValue: ocrTerms[i],
+                                                    onChanged: (val) =>
+                                                        ocrTerms[i] = val,
+                                                    decoration: InputDecoration(
+                                                      hintText: 'Term ${i + 1}',
+                                                      border:
+                                                          const OutlineInputBorder(),
+                                                      isDense: true,
+                                                      contentPadding:
+                                                          const EdgeInsets
+                                                              .symmetric(
+                                                              horizontal: 12,
+                                                              vertical: 8),
+                                                    ),
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 8),
+                                                IconButton(
+                                                  icon: const Icon(Icons.delete,
+                                                      color: Colors.red),
+                                                  onPressed: () {
+                                                    setState(() =>
+                                                        ocrTerms.removeAt(i));
+                                                  },
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Align(
+                                        alignment: Alignment.centerRight,
+                                        child: TextButton.icon(
+                                          onPressed: () {
+                                            setState(() => ocrTerms.add(''));
+                                          },
+                                          icon: const Icon(Icons.add),
+                                          label: const Text('Add New Term'),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            );
+                                ),
+                              );
+                            }
                           },
                         ),
                       ),

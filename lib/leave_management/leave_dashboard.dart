@@ -8,7 +8,9 @@ import 'leave_logic.dart';
 
 class LeaveDashboard extends StatefulWidget {
   final Account account;
-  const LeaveDashboard({super.key, required this.account});
+  final String ocrDictionary;
+  const LeaveDashboard(
+      {super.key, required this.account, required this.ocrDictionary});
 
   @override
   State<LeaveDashboard> createState() => _LeaveDashboardState();
@@ -58,9 +60,9 @@ class _LeaveDashboardState extends State<LeaveDashboard> {
                           context,
                           MaterialPageRoute(
                               builder: (_) => LeaveCategory(
-                                    onRefresh: loadLatestData,
-                                    account: widget.account,
-                                  )),
+                                  onRefresh: loadLatestData,
+                                  account: widget.account,
+                                  ocrDictionary: widget.ocrDictionary)),
                         );
                       },
                       icon: const Icon(

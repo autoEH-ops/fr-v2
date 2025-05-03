@@ -50,8 +50,12 @@ class ManageSettingsLogic {
       required Account account}) async {
     try {
       for (var i = 0; i < systemSettings.length; i++) {
-        final updatedValue = controllers[i].text;
         final setting = systemSettings[i];
+// 👇 Skip 'ocr_dictionary'
+        if (setting.setting == 'ocr_dictionary') {
+          continue;
+        }
+        final updatedValue = controllers[i].text;
         setting.value = updatedValue;
         final row = {
           'value': updatedValue,

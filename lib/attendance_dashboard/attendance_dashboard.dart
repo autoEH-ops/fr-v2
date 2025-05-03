@@ -56,6 +56,7 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
   double locationLat = 0.0;
   double locationLong = 0.0;
   double approximateRange = 0.0;
+  String ocrDictionary = "";
   final GeolocatorService _geolocatorService = GeolocatorService();
   final DashboardDrawer _dashboardDrawer = DashboardDrawer();
   final Fab _fab = Fab();
@@ -70,9 +71,22 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
       conditionalTitle()
     ];
     loadLatestData();
-    locationLat = double.parse(widget.systemSettings[0].value);
-    locationLong = double.parse(widget.systemSettings[1].value);
-    approximateRange = double.parse(widget.systemSettings[2].value);
+    for (final setting in widget.systemSettings) {
+      switch (setting.setting) {
+        case 'location_lat':
+          locationLat = double.parse(setting.value);
+          break;
+        case 'location_long':
+          locationLong = double.parse(setting.value);
+          break;
+        case 'approximate_range':
+          approximateRange = double.parse(setting.value);
+          break;
+        case 'ocr_dictionary':
+          ocrDictionary = setting.value;
+          break;
+      }
+    }
   }
 
   Future<Activity?> checkEarlyCheckOut() async {
@@ -90,7 +104,6 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
         await dashboardLogic.checkEarlyCheckOut(dbHelper, widget.account);
     final checkLate =
         await dashboardLogic.checkIfLate(dbHelper, widget.account);
-
     setState(() {
       latestAttendance = attendance;
       latestActivity = activity;
@@ -119,7 +132,8 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
           checkEarlyCheckOut: checkEarlyCheckOut,
           locationLat: locationLat,
           locationLong: locationLong,
-          approximateRange: approximateRange),
+          approximateRange: approximateRange,
+          ocrDictionary: ocrDictionary),
       floatingActionButton: _fab.buildFab(
         context: context,
         systemSettings: widget.systemSettings,
@@ -201,9 +215,7 @@ class _AttendanceDashboardState extends State<AttendanceDashboard> {
               controller: _pageController,
               physics: const NeverScrollableScrollPhysics(),
               children: [
-                InformationPage(
-                  account: widget.account,
-                ),
+                InformationPage(account: widget.account),
                 AttendanceRecords(account: widget.account),
                 ActivityLogs(account: widget.account),
                 widget.account.role == 'super_admin' ||

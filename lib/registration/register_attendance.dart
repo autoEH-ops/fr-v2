@@ -1,10 +1,12 @@
 import 'dart:typed_data';
 
+import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
+import 'package:intl/intl.dart';
 import '../login/login_page.dart';
 import '../attendance_dashboard/attendance_dashboard.dart';
 import '../db/supabase_db_helper.dart';
@@ -31,6 +33,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
+  List<DateTime?> _dates = [];
   late ImagePicker imagePicker;
   late Account account;
   late FaceDetector faceDetector;
@@ -42,6 +45,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
     'admin': 'Admin',
     'super_admin': 'Super Admin',
     'security': 'Security',
+    'intern': 'Intern',
   };
   String? _selectedRole;
 
@@ -221,6 +225,9 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                             'email': _emailController.text.trim(),
                             'role': _selectedRole!,
                             'image_url': imageUrl,
+                            'start_date':
+                                _dates.first!.toUtc().toIso8601String(),
+                            'end_date': _dates.last!.toUtc().toIso8601String(),
                             'embeddings': recognition.embeddings
                           };
                           await guestLogic.insertRegisterAccountRequests(
@@ -240,6 +247,9 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                             'email': _emailController.text.trim(),
                             'role': _selectedRole!,
                             'image_url': imageUrl,
+                            'start_date':
+                                _dates.first!.toUtc().toIso8601String(),
+                            'end_date': _dates.last!.toUtc().toIso8601String(),
                           };
                           await dbHelper.insert('accounts', row);
                           final newAccount =
@@ -348,12 +358,16 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
         _selectedRole!,
         null,
         null,
+        // TODO: add start date and end date
+        _dates.first!,
+        _dates.last!,
       );
 
       debugPrint('Registered Account:');
       debugPrint('Phone: ${account.phone}');
       debugPrint('Email: ${account.email}');
       debugPrint('Role: ${account.role}');
+      debugPrint("dates: first - ${_dates.first} and last ${_dates.last}");
 
       _showFaceRegistrationDialog();
     }
@@ -420,74 +434,183 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text(!widget.isGuest
-              ? 'Register Account'
-              : 'Register Account - Guest')),
+        title:
+            Text(widget.isGuest ? 'Guest Registration' : 'Register Attendance'),
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Name'),
-                validator: (value) =>
-                    value == null || value.isEmpty ? 'Enter name' : null,
-              ),
-              TextFormField(
-                controller: _phoneController,
-                decoration: const InputDecoration(labelText: 'Phone'),
-                keyboardType: TextInputType.phone,
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Enter phone number'
-                    : null,
-              ),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: 'Email'),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) => value == null || !value.contains('@')
-                    ? 'Enter a valid email'
-                    : null,
-              ),
-              const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Role'),
-                items: _roleMap.entries
-                    .map((entry) => DropdownMenuItem<String>(
-                          value: entry.key,
-                          child: Text(entry.value),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedRole = value;
-                  });
-                },
-                value: _selectedRole,
-                validator: (value) => value == null || value.isEmpty
-                    ? 'Please select a role'
-                    : null,
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: () => _pickImageFromGallery(),
-                    child: const Text('Upload Image'),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTextField(_nameController, "Full Name", Icons.person),
+                const SizedBox(height: 16),
+                _buildTextField(_phoneController, "Phone Number", Icons.phone,
+                    keyboardType: TextInputType.phone),
+                const SizedBox(height: 16),
+                _buildTextField(_emailController, "Email Address", Icons.email,
+                    keyboardType: TextInputType.emailAddress),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  decoration: InputDecoration(
+                    labelText: "Select Role",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: _submitAndProceedToFaceRegistration,
-                    child: const Text('Capture Live'),
-                  ),
-                ],
-              ),
-            ],
+                  value: _selectedRole,
+                  items: _roleMap.entries
+                      .map((entry) => DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedRole = value;
+                    });
+                  },
+                  validator: (value) =>
+                      value == null ? 'Please select a role' : null,
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Material(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .primary
+                          .withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () async {
+                          final results = await showCalendarDatePicker2Dialog(
+                            context: context,
+                            config: CalendarDatePicker2WithActionButtonsConfig(
+                              calendarType: CalendarDatePicker2Type.range,
+                            ),
+                            dialogSize: const Size(325, 400),
+                            value: _dates,
+                            borderRadius: BorderRadius.circular(15),
+                          );
+
+                          if (results != null) {
+                            setState(() {
+                              _dates = results;
+                            });
+                          }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: Icon(Icons.calendar_today,
+                              color: Theme.of(context).colorScheme.primary),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            )
+                          ],
+                        ),
+                        child: Text(
+                          _dates.isEmpty
+                              ? 'Select a date range'
+                              : _dates
+                                  .whereType<DateTime>()
+                                  .map((d) =>
+                                      DateFormat('E, dd/MM/yyyy').format(d))
+                                  .join(' – '),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _pickImageFromGallery,
+                        icon: const Icon(
+                          Icons.upload_file,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          "Upload Face",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: Colors.indigo,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: _submitAndProceedToFaceRegistration,
+                        icon: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                        ),
+                        label: const Text(
+                          "Camera",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          backgroundColor: Colors.deepOrange,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField(
+      TextEditingController controller, String label, IconData icon,
+      {TextInputType keyboardType = TextInputType.text}) {
+    return TextFormField(
+      controller: controller,
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      keyboardType: keyboardType,
+      validator: (value) => value == null || value.trim().isEmpty
+          ? 'This field is required'
+          : null,
     );
   }
 }

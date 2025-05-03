@@ -29,7 +29,8 @@ class DashboardDrawer {
           required Future<Activity?> Function() checkEarlyCheckOut,
           required double locationLat,
           required double locationLong,
-          required double approximateRange}) =>
+          required double approximateRange,
+          required String ocrDictionary}) =>
       Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -104,7 +105,7 @@ class DashboardDrawer {
               color: Colors.blueGrey.shade600,
               onTap: () => _navigateTo(
                 context,
-                LeaveDashboard(account: account),
+                LeaveDashboard(account: account, ocrDictionary: ocrDictionary),
               ),
             ),
             _drawerTile(

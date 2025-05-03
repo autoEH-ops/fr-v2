@@ -12,8 +12,13 @@ import 'leave_request.dart';
 
 class LeaveCategory extends StatefulWidget {
   final Account account;
+  final String ocrDictionary;
   final Future<void> Function()? onRefresh;
-  const LeaveCategory({super.key, required this.account, this.onRefresh});
+  const LeaveCategory(
+      {super.key,
+      required this.account,
+      required this.ocrDictionary,
+      this.onRefresh});
 
   @override
   State<LeaveCategory> createState() => _LeaveCategoryState();
@@ -217,7 +222,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
 
     //
     // Upload picture flow
-    String leaveType = "annual_leave";
+    String leaveType = "medical_leave";
     String uniqueUrl =
         '${widget.account.email}_${leaveType}_${DateTime.now().millisecondsSinceEpoch}.jpg';
     String filePath = 'public/$uniqueUrl';
@@ -234,12 +239,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
     debugPrint("End Date: $endDate");
     debugPrint("Reason: $reason");
     debugPrint("Image Selected: ${selectedImage.path}");
-    List<String> autoApproveKeywords = [
-      'sijil cuti sakit',
-      'medical certification',
-      'surat doktor',
-      'klinik kesihatan'
-    ];
+    List<String> autoApproveKeywords = widget.ocrDictionary.split('|');
 
     bool shouldAutoApprove = autoApproveKeywords
         .any((keyword) => extractedText.toLowerCase().contains(keyword));
@@ -284,6 +284,34 @@ class _LeaveCategoryState extends State<LeaveCategory> {
     File? selectedImage,
     String reason = '',
   }) async {
-    debugPrint("Get to implementation later");
+    // Upload picture
+    String leaveType = "emergency_leave";
+    String uniqueUrl =
+        '${widget.account.email}_${leaveType}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    String filePath = 'public/$uniqueUrl';
+    Uint8List imageBytes;
+    String? attachmentUrl;
+    if (selectedImage != null) {
+      imageBytes = await selectedImage.readAsBytes();
+      attachmentUrl = await leaveLogic.createAttachmentUrlInBucket(
+          dbHelper: dbHelper,
+          uniqueUrl: uniqueUrl,
+          filePath: filePath,
+          imageBytes: imageBytes);
+    }
+
+    // Create leave request
+    await leaveLogic.createLeaveRequest(
+        dbHelper: dbHelper,
+        startTime: startDate,
+        endTime: endDate,
+        account: widget.account,
+        leaveType: leaveType,
+        reason: reason,
+        attachmentUrl: attachmentUrl);
+
+    if (widget.onRefresh != null) {
+      await widget.onRefresh!();
+    }
   }
 }

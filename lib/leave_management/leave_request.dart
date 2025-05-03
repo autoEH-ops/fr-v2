@@ -14,12 +14,11 @@ class LeaveRequest extends StatefulWidget {
   final String leaveType;
   final int? annualLeaveUsed;
   final CalendarDatePicker2Config datePickerConfig;
-  final Future<void> Function({
-    required DateTime startDate,
-    required DateTime endDate,
-    File? selectedImage,
-    String reason,
-  }) onSubmit;
+  final Future<void> Function(
+      {required DateTime startDate,
+      required DateTime endDate,
+      File? selectedImage,
+      String reason}) onSubmit;
 
   const LeaveRequest({
     super.key,

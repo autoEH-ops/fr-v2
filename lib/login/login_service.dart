@@ -24,6 +24,7 @@ class LoginService {
   // Fetch account data and send OTP
   Future<Account?> getData(String input) async {
     Account? matchingAccount;
+    debugPrint("input: $input");
     try {
       accounts =
           await dbHelper.getAllRows<Account>('accounts', Account.fromMap);
