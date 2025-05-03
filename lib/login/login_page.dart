@@ -76,6 +76,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     systemSettings = await getSystemSetting();
     if (loggedInAccount != null) {
       final account = loggedInAccount!;
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -177,7 +178,7 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),

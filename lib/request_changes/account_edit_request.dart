@@ -49,7 +49,7 @@ class _AccountEditRequestState extends State<AccountEditRequest> {
           ),
           if (_isProcessing)
             Container(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               child: const Center(
                 child: CircularProgressIndicator(),
               ),
@@ -81,7 +81,7 @@ class _AccountEditRequestState extends State<AccountEditRequest> {
                         leading: CircleAvatar(
                           backgroundColor: requestLogic
                               .getStatusColor(request.requestStatus)
-                              .withOpacity(0.4),
+                              .withValues(alpha: 0.4),
                           child: Text(
                             "${request.id}",
                             style: TextStyle(
@@ -120,7 +120,7 @@ class _AccountEditRequestState extends State<AccountEditRequest> {
     try {
       Account? accountRequested = await requestLogic.getRequestedAccount(
           dbHelper: dbHelper, requested: request);
-      if (!mounted) return;
+      if (!context.mounted) return;
 
       showDialog(
         context: context,
@@ -361,13 +361,15 @@ class _AccountEditRequestState extends State<AccountEditRequest> {
       setState(() {
         _isProcessing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Request Accepted. Account updated.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Request Accepted. Account updated.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     }
   }
 
@@ -394,13 +396,15 @@ class _AccountEditRequestState extends State<AccountEditRequest> {
       setState(() {
         _isProcessing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Request Rejected.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Request Rejected.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

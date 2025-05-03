@@ -79,9 +79,9 @@ Future<MarkAttendanceResponse> markAttendance({
     recognizedName: recognizedName,
   );
 
-  if (account == null)
+  if (account == null) {
     return MarkAttendanceResponse(result: MarkAttendanceResult.cancelled);
-
+  }
   final attendance = await getLatestAttendance(
     dbHelper: dbHelper,
     accountId: account.id,
@@ -96,11 +96,16 @@ Future<MarkAttendanceResponse> markAttendance({
     final isCheckIn = attendance.attendanceStatus == 'check_in';
 
     if (isCheckIn && now.hour < 18) {
+      if (!context.mounted) {
+        return MarkAttendanceResponse(result: MarkAttendanceResult.error);
+      }
       activity = await showManageActivityDialog(context, account, dbHelper);
       if (activity == null) {
         return MarkAttendanceResponse(result: MarkAttendanceResult.cancelled);
       }
-
+      if (!context.mounted) {
+        return MarkAttendanceResponse(result: MarkAttendanceResult.error);
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -117,11 +122,13 @@ Future<MarkAttendanceResponse> markAttendance({
     status =
         attendance.attendanceStatus == 'check_in' ? 'check_out' : 'check_in';
   }
-
+  if (!context.mounted) {
+    return MarkAttendanceResponse(result: MarkAttendanceResult.error);
+  }
   final confirmed = await showConfirmCheckDialog(context, status);
-  if (!confirmed)
+  if (!confirmed) {
     return MarkAttendanceResponse(result: MarkAttendanceResult.cancelled);
-
+  }
   try {
     await dbHelper.insert(table, {
       'account_id': account.id,
@@ -143,7 +150,9 @@ Future<MarkAttendanceResponse> markAttendance({
       });
     }
     debugPrint("Attendance marked for ${account.name}");
-
+    if (!context.mounted) {
+      return MarkAttendanceResponse(result: MarkAttendanceResult.error);
+    }
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(
           "${status == 'check_in' ? 'Check in' : 'Check out'} for: ${account.name}"),
@@ -323,6 +332,7 @@ Future<String?> showManageActivityDialog(
                       });
                     }
                   }
+                  if (!dialogContext.mounted) return;
                   Navigator.of(dialogContext).pop(selectedActivity);
                 },
                 child: Text("Yes"),

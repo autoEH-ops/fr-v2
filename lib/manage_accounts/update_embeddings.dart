@@ -387,6 +387,7 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
         widget.name,
         (data) => Account.fromMap(data),
       );
+
       if (updatingAccount == null) debugPrint("It is null");
 
       String embeddingJson = jsonEncode(recognition.embeddings);
@@ -401,6 +402,7 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
         } catch (e) {
           debugPrint("Failed to update");
         }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Embedding update succesfully"),
@@ -408,7 +410,9 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
             backgroundColor: Colors.green,
           ),
         );
+
         Navigator.pop(context);
+
         Navigator.pop(context);
       }
     } catch (e) {

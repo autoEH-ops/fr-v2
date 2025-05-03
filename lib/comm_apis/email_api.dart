@@ -51,9 +51,9 @@ $body
 
     try {
       var sentMessage = await gmailApi.users.messages.send(message, 'me');
-      print('Message sent: ${sentMessage.id}');
+      debugPrint('Message sent: ${sentMessage.id}');
     } catch (error) {
-      print('An error occurred: $error');
+      debugPrint('An error occurred: $error');
     } finally {
       client.close();
     }

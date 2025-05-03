@@ -170,13 +170,15 @@ class _ManageAccountState extends State<ManageAccount> {
     } catch (e) {
       debugPrint('Update error: $e');
     } finally {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Account updated. Updated photo will take time to process and take effect')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text(
+                  'Account updated. Updated photo will take time to process and take effect')),
+        );
 
-      Navigator.pop(context, widget.account);
+        Navigator.pop(context, widget.account);
+      }
     }
   }
 

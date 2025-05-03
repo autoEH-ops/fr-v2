@@ -114,7 +114,6 @@ class _FaceRegistrationState extends State<FaceRegistration> {
 
     for (Face face in faces) {
       Rect faceRect = face.boundingBox;
-      //TODO crop face
       img.Image croppedFace = img.copyCrop(image!,
           x: faceRect.left.toInt(),
           y: faceRect.top.toInt(),
@@ -210,11 +209,13 @@ class _FaceRegistrationState extends State<FaceRegistration> {
                           widget.account.email,
                           (data) => Account.fromMap(data),
                         );
+                        if (!mounted) return;
                         if (newAccount != null) {
                           await recognizer.registerFaceInDb(
                             recognition.embeddings,
                             newAccount,
                           );
+                          if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text("Face Registered")),
                           );

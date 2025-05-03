@@ -53,13 +53,15 @@ class _LeaveApprovalState extends State<LeaveApproval> {
       setState(() {
         _isProcessing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Request Accepted. Updated Attendance.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Request Accepted. Updated Attendance.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     }
   }
 
@@ -86,13 +88,15 @@ class _LeaveApprovalState extends State<LeaveApproval> {
       setState(() {
         _isProcessing = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Request Rejected.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Request Rejected.'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -119,7 +123,7 @@ class _LeaveApprovalState extends State<LeaveApproval> {
           ),
           if (_isProcessing)
             Container(
-              color: Colors.black.withOpacity(0.3),
+              color: Colors.black.withValues(alpha: 0.3),
               child: const Center(
                 child: CircularProgressIndicator(),
               ),
@@ -151,7 +155,7 @@ class _LeaveApprovalState extends State<LeaveApproval> {
                         leading: CircleAvatar(
                           backgroundColor: requestLogic
                               .getStatusColor(request.leaveStatus)
-                              .withOpacity(0.4),
+                              .withValues(alpha: 0.4),
                           child: Text(
                             "${request.id}",
                             style: TextStyle(
@@ -192,7 +196,7 @@ class _LeaveApprovalState extends State<LeaveApproval> {
     try {
       Account? accountRequested =
           await leaveLogic.fetchAccount(dbHelper: dbHelper, leave: request);
-      if (!mounted) return;
+      if (!context.mounted) return;
       showDialog(
         context: context,
         builder: (context) {

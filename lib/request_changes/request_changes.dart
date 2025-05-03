@@ -74,6 +74,7 @@ class _RequestChangesState extends State<RequestChanges> {
 
       debugPrint("Get here: ${row['requested_changes']}");
       await dbHelper.insert('requests', row);
+      if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

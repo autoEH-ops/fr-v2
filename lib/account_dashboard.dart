@@ -206,7 +206,7 @@ class _AccountDashboardState extends State<AccountDashboard> {
                               await _geolocatorService.isWithinRange(
                                   targetLat: locationLat,
                                   targetLng: locationLong);
-
+                          if (!context.mounted) return;
                           if (!isNearby) {
                             Navigator.of(context).pop();
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -221,7 +221,7 @@ class _AccountDashboardState extends State<AccountDashboard> {
 
                           final Activity? checkoutEarly =
                               await checkEarlyCheckOut();
-
+                          if (!context.mounted) return;
                           Navigator.of(context).pop();
 
                           if (checkoutEarly?.message == null) {
@@ -377,8 +377,8 @@ class _AccountDashboardState extends State<AccountDashboard> {
       child: InkWell(
         borderRadius: BorderRadius.circular(15),
         onTap: onTap,
-        splashColor: color.withOpacity(0.1),
-        highlightColor: color.withOpacity(0.05),
+        splashColor: color.withValues(alpha: 0.1),
+        highlightColor: color.withValues(alpha: 0.05),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
@@ -386,7 +386,7 @@ class _AccountDashboardState extends State<AccountDashboard> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 28),

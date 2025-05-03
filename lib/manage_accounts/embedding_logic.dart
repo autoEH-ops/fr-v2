@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
@@ -30,6 +29,7 @@ class EmbeddingLogic {
       if (pickedFile == null) {
         return;
       }
+      if (!context.mounted) return;
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -40,6 +40,7 @@ class EmbeddingLogic {
 
       faces = await faceDetector.processImage(inputImage);
       if (faces.isEmpty) {
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("No face found in the selected image"),
@@ -53,6 +54,8 @@ class EmbeddingLogic {
       await faceDetector.close();
     } catch (e) {
       debugPrint("Failed to upload and detected faces: $e");
+
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Failed to process image."),
@@ -69,6 +72,7 @@ class EmbeddingLogic {
 
     final Face face = faces.first;
 
+    if (!context.mounted) return;
     _performFaceRegistration(
       context: context,
       face: face,
@@ -242,6 +246,7 @@ class EmbeddingLogic {
         } catch (e) {
           debugPrint("Failed to update");
         }
+        if (!context.mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Embedding update succesfully"),
@@ -254,6 +259,7 @@ class EmbeddingLogic {
       }
     } catch (e) {
       debugPrint("Registration error: $e");
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Registration failed. Try again later."),

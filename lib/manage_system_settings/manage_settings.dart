@@ -80,12 +80,14 @@ class _ManageSettingsState extends State<ManageSettings> {
       setState(() {
         _isLoading = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                'Updated related fields with current location latitude and longitude.\n'
-                'Please click on Update to confirm changes')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Updated related fields with current location latitude and longitude.\n'
+                  'Please click on Update to confirm changes')),
+        );
+      }
     }
   }
 
@@ -122,9 +124,11 @@ class _ManageSettingsState extends State<ManageSettings> {
           setState(() {
             _isLoading = false;
           });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('All settings saved to Supabase')),
-          );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('All settings saved to Supabase')),
+            );
+          }
         }
       }
     }
@@ -360,7 +364,7 @@ class _ManageSettingsState extends State<ManageSettings> {
           systemSettings.add(Setting(null, name, value, null, null, null));
           _controllers.add(TextEditingController(text: value));
         });
-
+        if (!mounted) return;
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

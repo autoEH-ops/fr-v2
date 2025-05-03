@@ -87,7 +87,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
     try {
       XFile? pickedFile =
           await imagePicker.pickImage(source: ImageSource.gallery);
-
+      if (!mounted) return;
       if (pickedFile == null) {
         Navigator.of(context).pop();
         return;
@@ -100,12 +100,14 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
       await faceDetector.close();
     } catch (e) {
       debugPrint("Something went wrong when processing image from uploading");
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Failed to process image.")),
       );
       return;
     }
 
+    if (!mounted) return;
     Navigator.of(context).pop();
 
     if (faces.isEmpty) {
@@ -205,6 +207,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                         await dbHelper.insertIntoBucket(filePath, imageBytes);
                         debugPrint("Inserted in bucket successfully.");
                       } catch (e) {
+                        if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                               content: Text(
@@ -232,6 +235,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                           };
                           await guestLogic.insertRegisterAccountRequests(
                               dbHelper: dbHelper, row: guestRow);
+                          if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text("Please wait for admin approval."),
                             behavior: SnackBarBehavior.floating,
@@ -268,10 +272,12 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                               'account_id': newAccount.id,
                               'annual_leave_entitlement': 8
                             });
+                            if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("Face Registered")),
                             );
                           }
+                          if (!mounted) return;
                           Navigator.of(context).pop();
                           Navigator.of(context).pop(); // Close dialog
                           Navigator.push(
@@ -290,6 +296,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                         }
                       } catch (e) {
                         debugPrint("Registration error: $e");
+                        if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content:
@@ -358,7 +365,6 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
         _selectedRole!,
         null,
         null,
-        // TODO: add start date and end date
         _dates.first!,
         _dates.last!,
       );
@@ -484,7 +490,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                       color: Theme.of(context)
                           .colorScheme
                           .primary
-                          .withOpacity(0.1),
+                          .withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
@@ -522,7 +528,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             )

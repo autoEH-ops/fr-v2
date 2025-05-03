@@ -33,7 +33,7 @@ class Fab {
             targetLng: locationLong,
             rangeInMeters: approximateRange,
           );
-
+          if (!context.mounted) return;
           if (!isNearby) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -47,7 +47,7 @@ class Fab {
           }
 
           final List<Attendance> latestAttendance = await fetchTodayAttendance;
-
+          if (!context.mounted) return;
           if (latestAttendance.isNotEmpty &&
               latestAttendance.first.attendanceStatus == "on_leave") {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -62,6 +62,7 @@ class Fab {
           }
 
           final Activity? checkoutEarly = await checkEarlyCheckOut();
+          if (!context.mounted) return;
           if (checkoutEarly?.message == null) {
             _navigateTo(
                 context,

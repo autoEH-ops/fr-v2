@@ -58,9 +58,9 @@ class LoginService {
         'otp': otp,
       }, onConflict: 'account_id'); // Ensures update on conflict by account_id
 
-      print('OTP upserted successfully for accountId $accountId');
+      debugPrint('OTP upserted successfully for accountId $accountId');
     } catch (e) {
-      print('Exception while upserting OTP: $e');
+      debugPrint('Exception while upserting OTP: $e');
     }
   }
 

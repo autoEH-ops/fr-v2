@@ -116,7 +116,6 @@ class _TakeAttendanceState extends State<TakeAttendance> {
 
         debugPrint("Detected ${faces.length} face(s)");
       }
-      //TODO perform face recognition on detected faces
     } catch (e) {
       debugPrint("Something went wrong in doFaceDetectionOnFrame: $e");
     }
@@ -161,10 +160,12 @@ class _TakeAttendanceState extends State<TakeAttendance> {
         hasRecognizedFace = true;
         await controller.stopImageStream();
         await Future.delayed(Duration(milliseconds: 500));
+        if (!mounted) return;
         final response = await markAttendance(
             context: context,
             dbHelper: dbHelper,
             recognizedName: recognition.name);
+        if (!mounted) return;
         handleAttendanceResult(
             context, response.result, response, widget.systemSettings);
 
@@ -185,7 +186,6 @@ class _TakeAttendanceState extends State<TakeAttendance> {
     size = MediaQuery.of(context).size;
 
     if (_isCameraInitialized && controller.value.isInitialized) {
-      //TODO View for displaying the live camera footage
       stackChildren.add(
         Positioned.fill(
             child: AspectRatio(
@@ -202,8 +202,8 @@ class _TakeAttendanceState extends State<TakeAttendance> {
             padding: const EdgeInsets.all(16.0),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black
-                    .withOpacity(0.5), // Semi-transparent black background
+                color: Colors.black.withValues(
+                    alpha: 0.5), // Semi-transparent black background
                 borderRadius: BorderRadius.circular(50), // Round corners
               ),
               child: IconButton(
@@ -214,8 +214,8 @@ class _TakeAttendanceState extends State<TakeAttendance> {
                 icon: Icon(Icons.close,
                     color: Colors.white, size: 30), // Close icon
                 padding: EdgeInsets.all(16),
-                splashColor:
-                    Colors.red.withOpacity(0.3), // Splash color when tapped
+                splashColor: Colors.red
+                    .withValues(alpha: 0.3), // Splash color when tapped
                 iconSize: 30, // Icon size
               ),
             ),
