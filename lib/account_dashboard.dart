@@ -1,5 +1,5 @@
 import '../registration/register_attendance.dart';
-import 'Login/LoginPage.dart';
+import 'login/login_page.dart';
 import 'activity_logs/activity_logs.dart';
 import 'admin/admin_dashboard.dart';
 import 'attendance_dashboard/attendance_dashboard.dart';

@@ -106,6 +106,7 @@ class RecordsLogic {
                 "check_in": null,
                 "check_out": null,
                 "on_leave": false,
+                "absent": false,
               });
 
       if (record.attendanceStatus == 'check_in') {
@@ -114,6 +115,8 @@ class RecordsLogic {
         grouped[dateKey]!["check_out"] = record.attendanceTime;
       } else if (record.attendanceStatus == 'on_leave') {
         grouped[dateKey]!["on_leave"] = true;
+      } else if (record.attendanceStatus == 'absent') {
+        grouped[dateKey]!["absent"] = true;
       }
     }
     debugPrint(grouped.toString());

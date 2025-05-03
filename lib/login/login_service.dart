@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../GoogleAPIs/EmailAPI.dart';
-import '../GoogleAPIs/WhatsAppAPI.dart';
+import '../comm_apis/email_api.dart';
+import '../comm_apis/whatsapp_api.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '../model/otp.dart';

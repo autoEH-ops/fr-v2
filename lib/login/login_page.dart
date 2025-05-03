@@ -5,7 +5,7 @@ import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '../model/setting.dart';
 import '../registration/register_attendance.dart';
-import '/Login/LoginService.dart';
+import 'login_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

@@ -7,7 +7,6 @@ import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart
 
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
-import '../model/leave.dart';
 import 'leave_logic.dart';
 import 'leave_request.dart';
 
@@ -63,7 +62,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
                       '$annualLeaveUsed more days',
                   icon: Icons.calendar_today,
                   onTap: () {
-                    if (annualLeaveUsed == 0) {
+                    if (annualLeaveUsed <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Annual leave used up.'),

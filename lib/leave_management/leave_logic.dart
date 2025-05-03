@@ -73,6 +73,18 @@ class LeaveLogic {
     } catch (e) {
       debugPrint("Failed to create leave request: $e");
     }
+
+    Leave? leave;
+    try {
+      final response = await dbHelper.getRowByField(
+          'leaves', 'attachment_url', attachmentUrl, Leave.fromMap);
+      leave = response;
+    } catch (e) {
+      debugPrint("Failed to  fetch leave");
+    }
+    if (leave != null) {
+      createNewOnLeaveAttendances(dbHelper: dbHelper, leave: leave);
+    }
   }
 
   Future<Account?> fetchAccount(
@@ -139,20 +151,52 @@ class LeaveLogic {
         !date.isAfter(endDate);
         date = date.add(const Duration(days: 1))) {
       if (date.weekday == DateTime.sunday) {
-        continue; // skip Sundays
+        continue; // Skip Sundays
       }
 
-      Map<String, dynamic> row = {
-        'account_id': leave.accountId,
-        'attendance_time': date.toIso8601String(),
-        'attendance_status': 'on_leave',
-        'leave_id': leave.id
-      };
+      final startOfDay = DateTime(date.year, date.month, date.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
 
       try {
-        await dbHelper.insert('attendance_v2', row);
+        // Check if there's already an attendance record for that date
+        final existingRecords = await dbHelper.supabase
+            .from('attendance_v2')
+            .select()
+            .eq('account_id', leave.accountId)
+            .gte('attendance_time', startOfDay.toIso8601String())
+            .lt('attendance_time', endOfDay.toIso8601String());
+
+        bool alreadyOnLeave = existingRecords.any(
+          (record) => record['attendance_status'] == 'on_leave',
+        );
+
+        if (alreadyOnLeave) {
+          continue; // Skip if already marked as on_leave
+        }
+
+        // Update existing "absent" records to "on_leave"
+        for (final record in existingRecords) {
+          if (record['attendance_status'] == 'absent') {
+            await dbHelper.updateWhere('attendance_v2', 'id', record['id'], {
+              'attendance_status': 'on_leave',
+              'leave_id': leave.id,
+            });
+          }
+        }
+
+        // Insert new record if none existed
+        if (existingRecords.isEmpty) {
+          Map<String, dynamic> row = {
+            'account_id': leave.accountId,
+            'attendance_time': startOfDay.toIso8601String(),
+            'attendance_status': 'on_leave',
+            'leave_id': leave.id,
+          };
+
+          await dbHelper.insert('attendance_v2', row);
+        }
       } catch (e) {
-        debugPrint("Failed to create new on_leave attendance record: $e");
+        debugPrint("Error processing date $date: $e");
       }
     }
   }

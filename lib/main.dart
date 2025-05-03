@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'Login/LoginPage.dart';
+import 'login/login_page.dart';
 
 late List<CameraDescription> cameras;
 void main() async {

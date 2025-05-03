@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image/image.dart' as img;
 
-import '../Login/LoginPage.dart';
+import '../login/login_page.dart';
 import '../attendance_dashboard/attendance_dashboard.dart';
 import '../main.dart';
 import '../db/supabase_db_helper.dart';

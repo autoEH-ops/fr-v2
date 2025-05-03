@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../Login/LoginPage.dart';
+import '../login/login_page.dart';
 import '../geolocator/geolocator_service.dart';
 import '../leave_management/leave_dashboard.dart';
 import '../manage_accounts/manage_accounts.dart';

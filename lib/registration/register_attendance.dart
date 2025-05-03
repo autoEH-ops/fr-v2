@@ -5,8 +5,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
-import '../Login/LoginPage.dart';
-import '../account_dashboard.dart';
+import '../login/login_page.dart';
+import '../attendance_dashboard/attendance_dashboard.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/recognition.dart';
 import '../model/setting.dart';
@@ -212,18 +212,19 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
 
                       String imageUrl =
                           '${dotenv.env['SUPABASE_URL']}/storage/v1/object/public/images/public/$uniqueUrl';
-                      Map<String, dynamic> row = {
-                        'name': _nameController.text.trim(),
-                        'phone': _phoneController.text.trim(),
-                        'email': _emailController.text.trim(),
-                        'role': _selectedRole!,
-                        'image_url': imageUrl,
-                        'embeddings': recognition.embeddings
-                      };
+
                       try {
                         if (widget.isGuest) {
+                          Map<String, dynamic> guestRow = {
+                            'name': _nameController.text.trim(),
+                            'phone': _phoneController.text.trim(),
+                            'email': _emailController.text.trim(),
+                            'role': _selectedRole!,
+                            'image_url': imageUrl,
+                            'embeddings': recognition.embeddings
+                          };
                           await guestLogic.insertRegisterAccountRequests(
-                              dbHelper: dbHelper, row: row);
+                              dbHelper: dbHelper, row: guestRow);
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text("Please wait for admin approval."),
                             behavior: SnackBarBehavior.floating,
@@ -233,6 +234,13 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                           Navigator.pop(context);
                           Navigator.pop(context);
                         } else {
+                          Map<String, dynamic> row = {
+                            'name': _nameController.text.trim(),
+                            'phone': _phoneController.text.trim(),
+                            'email': _emailController.text.trim(),
+                            'role': _selectedRole!,
+                            'image_url': imageUrl,
+                          };
                           await dbHelper.insert('accounts', row);
                           final newAccount =
                               await dbHelper.getRowByField<Account>(
@@ -246,6 +254,10 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                               recognition.embeddings,
                               newAccount,
                             );
+                            await dbHelper.insert('employee_metrics', {
+                              'account_id': newAccount.id,
+                              'annual_leave_entitlement': 8
+                            });
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("Face Registered")),
                             );
@@ -257,7 +269,7 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                             widget.account != null &&
                                     widget.systemSettings != null
                                 ? MaterialPageRoute(
-                                    builder: (context) => AccountDashboard(
+                                    builder: (context) => AttendanceDashboard(
                                           account: widget.account!,
                                           systemSettings:
                                               widget.systemSettings!,

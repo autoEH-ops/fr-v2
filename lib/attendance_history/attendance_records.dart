@@ -132,12 +132,13 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                             final checkIn = entry.value['check_in'];
                             final checkOut = entry.value['check_out'];
                             final onLeave = entry.value['on_leave'];
+                            final absent = entry.value['absent'];
                             final upcoming = recordsLogic
                                 .formatUpcomingTime(DateTime.parse(entry.key));
                             final dateTimeInfo = recordsLogic
                                 .formatAttendanceTime(checkIn, checkOut);
                             return _buildAttendanceCard(
-                                dateTimeInfo, onLeave, upcoming);
+                                dateTimeInfo, onLeave, upcoming, absent);
                           }).toList(),
                         ],
                       ),
@@ -146,7 +147,7 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
   }
 
   Widget _buildAttendanceCard(Map<String, dynamic> dateTimeInfo, bool onLeave,
-      Map<String, String> upcoming) {
+      Map<String, String> upcoming, bool absent) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: RoundedRectangleBorder(
@@ -158,7 +159,7 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            if (!onLeave) ...[
+            if (!onLeave && !absent) ...[
               // Colored Day+Month box
               Container(
                 width: 80,
@@ -255,12 +256,20 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
               // "On Leave" text
               Expanded(
                 child: Text(
-                  "On Leave",
+                  onLeave
+                      ? "On Leave"
+                      : absent
+                          ? "Absent"
+                          : "",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
-                    color: Colors.orange.shade700,
+                    color: onLeave
+                        ? Colors.orange.shade700
+                        : absent
+                            ? Colors.red
+                            : null,
                   ),
                 ),
               ),

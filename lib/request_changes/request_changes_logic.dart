@@ -126,6 +126,19 @@ class RequestChangesLogic {
     }
   }
 
+  Future<void> createNewAnnualLeave(
+      {required SupabaseDbHelper dbHelper, required Account account}) async {
+    Map<String, dynamic> row = {
+      'account_id': account.id,
+      'annual_leave_entitlement': 8,
+    };
+    try {
+      await dbHelper.insert('employee_metrics', row);
+    } catch (e) {
+      debugPrint("Failed to create new annual leave: $e");
+    }
+  }
+
   Future<void> deleteImageFromBucket(
       {required SupabaseDbHelper dbHelper,
       required Map<String, dynamic> request}) async {

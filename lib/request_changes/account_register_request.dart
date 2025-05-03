@@ -281,7 +281,13 @@ class _AccountRegisterRequestState extends State<AccountRegisterRequest> {
             dbHelper: dbHelper,
             account: newAccount,
             request: request.requestedChanges);
+
+        await requestLogic.createNewAnnualLeave(
+          dbHelper: dbHelper,
+          account: newAccount,
+        );
       }
+
       // Update request status to 'approved'
       await requestLogic.updateRequest(
           dbHelper: dbHelper,
