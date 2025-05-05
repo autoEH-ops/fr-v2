@@ -11,7 +11,6 @@ class GmailAPI {
   // Send email using Gmail API
   Future<void> sendEmail(String receiverEmail, String code) async {
     var client = http.Client();
-    debugPrint(dotenv.env['ADMINSDK_CA_CLIENT_EMAIL']);
     var credentials = ServiceAccountCredentials.fromJson({
       "type": "${dotenv.env['ADMINSDK_CA_TYPE']}",
       "project_id": "${dotenv.env['ADMINSDK_CA_PROJECT_ID']}",

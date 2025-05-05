@@ -119,7 +119,6 @@ class RecordsLogic {
         grouped[dateKey]!["absent"] = true;
       }
     }
-    debugPrint(grouped.toString());
     return grouped;
   }
 

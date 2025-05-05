@@ -24,7 +24,6 @@ class LoginService {
   // Fetch account data and send OTP
   Future<Account?> getData(String input) async {
     Account? matchingAccount;
-    debugPrint("input: $input");
     try {
       accounts =
           await dbHelper.getAllRows<Account>('accounts', Account.fromMap);
@@ -57,8 +56,6 @@ class LoginService {
         'account_id': accountId,
         'otp': otp,
       }, onConflict: 'account_id'); // Ensures update on conflict by account_id
-
-      debugPrint('OTP upserted successfully for accountId $accountId');
     } catch (e) {
       debugPrint('Exception while upserting OTP: $e');
     }
