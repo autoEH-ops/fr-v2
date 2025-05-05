@@ -1,8 +1,10 @@
 import 'dart:io';
 
+import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 import '../attendance_dashboard/recognizer.dart';
 import '../db/supabase_db_helper.dart';
@@ -29,12 +31,15 @@ class _ManageAccountState extends State<ManageAccount> {
   ManageAccountsLogic managementLogic = ManageAccountsLogic();
   EmbeddingLogic embeddingLogic = EmbeddingLogic();
   File? _imageFile;
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   final Map<String, String> _roles = {
     'super_admin': 'Super Admin',
     'admin': 'Admin',
     'security': 'Security',
     'viewer': 'Viewer',
+    'intern': 'Intern'
   };
 
   @override
@@ -44,6 +49,10 @@ class _ManageAccountState extends State<ManageAccount> {
     _emailController = TextEditingController(text: widget.account.email);
     _phoneController = TextEditingController(text: widget.account.phone);
     _selectedRole = widget.account.role;
+
+    _startDate = widget.account.startDate;
+    _endDate = widget.account.endDate;
+
     final options =
         FaceDetectorOptions(performanceMode: FaceDetectorMode.accurate);
     faceDetector = FaceDetector(options: options);
@@ -153,6 +162,11 @@ class _ManageAccountState extends State<ManageAccount> {
       'email': _emailController.text.trim(),
       'role': _selectedRole,
       'phone': _phoneController.text.trim(),
+      'start_date':
+          _startDate!.toUtc().add(Duration(hours: 16)).toIso8601String(),
+      'end_date': widget.account.role == "intern"
+          ? _endDate!.toUtc().add(Duration(hours: 16)).toIso8601String()
+          : null,
     };
     if (_imageFile != null) {
       await dbHelper.updateFromBucket(_imageFile!, widget.account);
@@ -166,6 +180,10 @@ class _ManageAccountState extends State<ManageAccount> {
         widget.account.email = _emailController.text.trim();
         widget.account.role = _selectedRole;
         widget.account.phone = _phoneController.text.trim();
+        widget.account.startDate = _startDate!;
+        if (widget.account.role == "intern") {
+          widget.account.endDate = _endDate;
+        }
       });
     } catch (e) {
       debugPrint('Update error: $e');
@@ -240,7 +258,7 @@ class _ManageAccountState extends State<ManageAccount> {
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Name'),
@@ -270,12 +288,36 @@ class _ManageAccountState extends State<ManageAccount> {
               },
               decoration: const InputDecoration(labelText: 'Role'),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
+            Text(
+              "Start Date",
+              style: TextStyle(color: Colors.black54),
+            ),
+            const SizedBox(height: 8),
+            _buildSingleDatePicker(
+              label: 'Start Date',
+              selectedDate: _startDate,
+              onDateSelected: (date) => setState(() => _startDate = date),
+            ),
+            const SizedBox(height: 16),
+            if (widget.account.role == 'intern') ...[
+              Text(
+                "End Date",
+                style: TextStyle(color: Colors.black54),
+              ),
+              const SizedBox(height: 8),
+              _buildSingleDatePicker(
+                label: 'End Date',
+                selectedDate: _endDate,
+                onDateSelected: (date) => setState(() => _endDate = date),
+              ),
+              const SizedBox(height: 8),
+            ],
             ElevatedButton(
               onPressed: _updateEmbedding,
               child: const Text('Embedding'),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _updateAccount,
               child: const Text('Update Account'),
@@ -283,6 +325,67 @@ class _ManageAccountState extends State<ManageAccount> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSingleDatePicker({
+    required String label,
+    required DateTime? selectedDate,
+    required void Function(DateTime?) onDateSelected,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Material(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              final result = await showCalendarDatePicker2Dialog(
+                context: context,
+                config: CalendarDatePicker2WithActionButtonsConfig(
+                  calendarType: CalendarDatePicker2Type.single,
+                ),
+                dialogSize: const Size(325, 400),
+                value: [selectedDate],
+                borderRadius: BorderRadius.circular(15),
+              );
+
+              if (result != null && result.isNotEmpty) {
+                onDateSelected(result.first);
+              }
+            },
+            child: const Padding(
+              padding: EdgeInsets.all(10),
+              child: Icon(Icons.calendar_today, color: Colors.blueAccent),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              selectedDate != null
+                  ? DateFormat('E, dd/MM/yyyy').format(selectedDate)
+                  : 'Select $label',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

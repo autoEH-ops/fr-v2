@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../leave_management/leave_report.dart';
 import '../login/login_page.dart';
 import '../geolocator/geolocator_service.dart';
 import '../leave_management/leave_dashboard.dart';
@@ -106,6 +107,15 @@ class DashboardDrawer {
               onTap: () => _navigateTo(
                 context,
                 LeaveDashboard(account: account, ocrDictionary: ocrDictionary),
+              ),
+            ),
+            _drawerTile(
+              icon: Icons.logout,
+              label: "Leave Report",
+              color: Colors.blue.shade600,
+              onTap: () => _navigateTo(
+                context,
+                LeaveReport(),
               ),
             ),
             _drawerTile(

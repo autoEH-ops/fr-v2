@@ -110,6 +110,19 @@ class LeaveLogic {
     return account;
   }
 
+  Future<Account?> fetchAdminAccount(
+      {required SupabaseDbHelper dbHelper, required Leave leave}) async {
+    Account? account;
+    try {
+      final response = await dbHelper.getRowByField(
+          'accounts', 'id', leave.approvedBy, Account.fromMap);
+      account = response;
+    } catch (e) {
+      debugPrint("Failed to fetch account: $e");
+    }
+    return account;
+  }
+
   Future<void> updateApprovalStatus(
       {required SupabaseDbHelper dbHelper,
       required Leave leave,
@@ -220,8 +233,17 @@ class LeaveLogic {
       }
     }
     if (countedLeaveDays > 0 && userAccount.role == 'intern') {
-      final newEndDate =
-          userAccount.endDate!.add(Duration(days: countedLeaveDays));
+      DateTime newEndDate = userAccount.endDate!;
+      int addedDays = 0;
+
+      while (addedDays < countedLeaveDays) {
+        newEndDate = newEndDate.add(const Duration(days: 1));
+
+        if (newEndDate.weekday != DateTime.sunday) {
+          addedDays++;
+        }
+      }
+
       try {
         Map<String, dynamic> updatedRow = {
           'end_date': newEndDate.toUtc().toIso8601String(),
@@ -241,6 +263,13 @@ class LeaveLogic {
 
   String formatTimeDayAndYear(DateTime time) {
     String formattedTime = DateFormat('EEE, dd/MM').format(time);
+    return formattedTime;
+  }
+
+  String formatTimeReport(DateTime time) {
+    DateTime malaysianTime = time.add(Duration(hours: 8));
+    String formattedTime =
+        DateFormat('EEE, dd/MM on hh:mm a').format(malaysianTime);
     return formattedTime;
   }
 

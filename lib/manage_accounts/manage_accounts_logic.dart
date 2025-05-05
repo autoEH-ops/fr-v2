@@ -98,7 +98,7 @@ class ManageAccountsLogic {
       required Account account,
       required Map<String, dynamic> row}) async {
     try {
-      await dbHelper.update('accounts', account.id!, row);
+      await dbHelper.updateWhere('accounts', 'id', account.id!, row);
       debugPrint("Successfully update account information");
     } catch (e) {
       debugPrint("Failed to update account information: $e");

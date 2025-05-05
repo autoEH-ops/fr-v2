@@ -80,26 +80,43 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                           Padding(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 16, vertical: 12),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                // _buildStatCard(
-                                //     'Fine',
-                                //     attendanceStats["Fine"] ?? -5,
-                                //     Colors.green),
-                                // _buildStatCard(
-                                //     'Late',
-                                //     attendanceStats["Late"] ?? -5,
-                                //     Colors.orange),
-                                // _buildStatCard(
-                                //     'Absent',
-                                //     attendanceStats["Absent"] ?? -5,
-                                //     Colors.red),
-                                // _buildStatCard(
-                                //     'Left Early',
-                                //     attendanceStats["Left Early"] ?? -5,
-                                //     Colors.purple),
-                              ],
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _buildStatCard(
+                                      'Fine',
+                                      /* attendanceStats["Fine"] ?? */ -5,
+                                      Colors.green),
+                                  _buildStatCard(
+                                      'Late',
+                                      /* attendanceStats["Late"] ?? */ -5,
+                                      Colors.amberAccent),
+                                  _buildStatCard(
+                                      'Absent',
+                                      /*  attendanceStats["Absent"] ?? */ -5,
+                                      Colors.red),
+                                  _buildStatCard(
+                                      'Left Early',
+                                      /*  attendanceStats["Left Early"] ?? */ -5,
+                                      Colors.purple),
+                                  _buildStatCard(
+                                      'On Leave',
+                                      /*  attendanceStats["Left Early"] ?? */ -5,
+                                      Colors.orange),
+                                ]
+                                    .map((card) => Padding(
+                                          padding:
+                                              const EdgeInsets.only(right: 12),
+                                          child: SizedBox(
+                                              width: 100,
+                                              child:
+                                                  card), // fixed width for consistent sizing
+                                        ))
+                                    .toList(),
+                              ),
                             ),
                           ),
                           if (filteredUpcoming.isNotEmpty) ...[
@@ -342,41 +359,41 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
   }
 
   // TODO: Build Stat Card
-  // Widget _buildStatCard(String title, int count, Color baseColor) {
-  //   final Color bgColor = baseColor;
-  //   final Color textColor = Colors.white;
+  Widget _buildStatCard(String title, int count, Color baseColor) {
+    final Color bgColor = baseColor;
+    final Color textColor = Colors.white;
 
-  //   return Expanded(
-  //     child: Card(
-  //       elevation: 4,
-  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-  //       color: bgColor,
-  //       child: Padding(
-  //         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-  //         child: Column(
-  //           mainAxisSize: MainAxisSize.min,
-  //           children: [
-  //             Text(
-  //               title,
-  //               style: TextStyle(
-  //                 fontSize: 14,
-  //                 fontWeight: FontWeight.w600,
-  //                 color: textColor,
-  //               ),
-  //             ),
-  //             const SizedBox(height: 4),
-  //             Text(
-  //               "$count",
-  //               style: TextStyle(
-  //                 fontSize: 22,
-  //                 fontWeight: FontWeight.bold,
-  //                 color: textColor,
-  //               ),
-  //             ),
-  //           ],
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
+    return Expanded(
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        color: bgColor,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "$count",
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
