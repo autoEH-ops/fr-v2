@@ -139,7 +139,7 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                                 .formatAttendanceTime(checkIn, checkOut);
                             return _buildAttendanceCard(
                                 dateTimeInfo, onLeave, upcoming, absent);
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),
@@ -341,41 +341,42 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
     );
   }
 
-  Widget _buildStatCard(String title, int count, Color baseColor) {
-    final Color bgColor = baseColor;
-    final Color textColor = Colors.white;
+  // TODO: Build Stat Card
+  // Widget _buildStatCard(String title, int count, Color baseColor) {
+  //   final Color bgColor = baseColor;
+  //   final Color textColor = Colors.white;
 
-    return Expanded(
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: bgColor,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "$count",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  //   return Expanded(
+  //     child: Card(
+  //       elevation: 4,
+  //       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //       color: bgColor,
+  //       child: Padding(
+  //         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+  //         child: Column(
+  //           mainAxisSize: MainAxisSize.min,
+  //           children: [
+  //             Text(
+  //               title,
+  //               style: TextStyle(
+  //                 fontSize: 14,
+  //                 fontWeight: FontWeight.w600,
+  //                 color: textColor,
+  //               ),
+  //             ),
+  //             const SizedBox(height: 4),
+  //             Text(
+  //               "$count",
+  //               style: TextStyle(
+  //                 fontSize: 22,
+  //                 fontWeight: FontWeight.bold,
+  //                 color: textColor,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
 }

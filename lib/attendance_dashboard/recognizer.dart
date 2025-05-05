@@ -13,15 +13,14 @@ import '../model/recognition.dart';
 class Recognizer {
   late Interpreter interpreter;
   late InterpreterOptions _interpreterOptions;
-  static const int WIDTH = 112;
-  static const int HEIGHT = 112;
+  static const int inputWidth = 112;
+  static const int inputHeight = 112;
 
   final dbHelper = SupabaseDbHelper();
   List<Embedding> embeddings = [];
 
   Map<String, Recognition> registered = {};
 
-  @override
   String get modelName => 'assets/mobile_face_net.tflite';
 
   Recognizer({int? numThreads}) {
@@ -100,15 +99,15 @@ class Recognizer {
 
   List<dynamic> imageToArray(img.Image inputImage) {
     img.Image resizedImage =
-        img.copyResize(inputImage, width: WIDTH, height: HEIGHT);
+        img.copyResize(inputImage, width: inputWidth, height: inputHeight);
     List<double> flattenedList = resizedImage.data!
         .expand((channel) => [channel.r, channel.g, channel.b])
         .map((value) => value.toDouble())
         .toList();
     Float32List float32Array = Float32List.fromList(flattenedList);
     int channels = 3;
-    int height = HEIGHT;
-    int width = WIDTH;
+    int height = inputHeight;
+    int width = inputWidth;
     Float32List reshapedArray = Float32List(1 * height * width * channels);
     for (int c = 0; c < channels; c++) {
       for (int h = 0; h < height; h++) {

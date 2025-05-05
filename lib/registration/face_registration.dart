@@ -58,10 +58,15 @@ class _FaceRegistrationState extends State<FaceRegistration> {
       if (!mounted) {
         return;
       }
-      controller.startImageStream((image) => {
-            if (!isBusy)
-              {isBusy = true, frame = image, doFaceDetectionOnFrame()}
-          });
+      controller.startImageStream((image) {
+        if (!isBusy) {
+          isBusy = true;
+          frame = image;
+          doFaceDetectionOnFrame();
+        }
+
+        setState(() {});
+      });
     });
   }
 
@@ -304,7 +309,6 @@ class _FaceRegistrationState extends State<FaceRegistration> {
       for (var h = 0; h < height; h++) {
         final uvIndex =
             uvPixelStride * (w / 2).floor() + uvRowStride * (h / 2).floor();
-        final index = h * width + w;
         final yIndex = h * yRowStride + w;
 
         final y = cameraImage.planes[0].bytes[yIndex];
@@ -437,20 +441,18 @@ class _FaceRegistrationState extends State<FaceRegistration> {
     List<Widget> stackChildren = [];
     size = MediaQuery.of(context).size;
 
-    if (controller != null) {
-      stackChildren.add(
-        Positioned.fill(
-          child: Container(
-            child: (controller.value.isInitialized)
-                ? AspectRatio(
-                    aspectRatio: controller.value.aspectRatio,
-                    child: CameraPreview(controller),
-                  )
-                : Container(),
-          ),
+    stackChildren.add(
+      Positioned.fill(
+        child: Container(
+          child: (controller.value.isInitialized)
+              ? AspectRatio(
+                  aspectRatio: controller.value.aspectRatio,
+                  child: CameraPreview(controller),
+                )
+              : Container(),
         ),
-      );
-    }
+      ),
+    );
 
     return SafeArea(
       child: Scaffold(

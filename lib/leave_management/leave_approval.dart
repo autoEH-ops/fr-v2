@@ -28,9 +28,11 @@ class _LeaveApprovalState extends State<LeaveApproval> {
       _isProcessing = true;
     });
     try {
+      Account? userAccount =
+          await leaveLogic.fetchAccount(dbHelper: dbHelper, leave: request);
       // Create New Attendances - attendance_status = on_leave
       await leaveLogic.createNewOnLeaveAttendances(
-          dbHelper: dbHelper, leave: request);
+          dbHelper: dbHelper, leave: request, userAccount: userAccount!);
 
       // Update annual leave amount
       await leaveLogic.updateAnnualLeaveDays(

@@ -54,10 +54,15 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
       if (!mounted) {
         return;
       }
-      controller.startImageStream((image) => {
-            if (!isBusy)
-              {isBusy = true, frame = image, doFaceDetectionOnFrame()}
-          });
+      controller.startImageStream((image) {
+        if (!isBusy) {
+          isBusy = true;
+          frame = image;
+          doFaceDetectionOnFrame();
+        }
+
+        setState(() {});
+      });
     });
   }
 
@@ -250,7 +255,6 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
       for (var h = 0; h < height; h++) {
         final uvIndex =
             uvPixelStride * (w / 2).floor() + uvRowStride * (h / 2).floor();
-        final index = h * width + w;
         final yIndex = h * yRowStride + w;
 
         final y = cameraImage.planes[0].bytes[yIndex];
@@ -402,7 +406,7 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
         } catch (e) {
           debugPrint("Failed to update");
         }
-
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Embedding update succesfully"),
@@ -417,6 +421,7 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
       }
     } catch (e) {
       debugPrint("Registration error: $e");
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Registration failed. Try again later."),
@@ -431,20 +436,18 @@ class _UpdateEmbeddingsState extends State<UpdateEmbeddings> {
     List<Widget> stackChildren = [];
     size = MediaQuery.of(context).size;
 
-    if (controller != null) {
-      stackChildren.add(
-        Positioned.fill(
-          child: Container(
-            child: (controller.value.isInitialized)
-                ? AspectRatio(
-                    aspectRatio: controller.value.aspectRatio,
-                    child: CameraPreview(controller),
-                  )
-                : Container(),
-          ),
+    stackChildren.add(
+      Positioned.fill(
+        child: Container(
+          child: (controller.value.isInitialized)
+              ? AspectRatio(
+                  aspectRatio: controller.value.aspectRatio,
+                  child: CameraPreview(controller),
+                )
+              : Container(),
         ),
-      );
-    }
+      ),
+    );
 
     return SafeArea(
       child: Scaffold(

@@ -134,7 +134,7 @@ class SupabaseDbHelper {
           .maybeSingle();
 
       if (response != null) {
-        return await fromMap(response);
+        return fromMap(response);
       }
       return null;
     } catch (e) {

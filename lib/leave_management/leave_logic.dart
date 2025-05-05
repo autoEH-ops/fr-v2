@@ -80,10 +80,20 @@ class LeaveLogic {
           'leaves', 'attachment_url', attachmentUrl, Leave.fromMap);
       leave = response;
     } catch (e) {
-      debugPrint("Failed to  fetch leave");
+      debugPrint("Failed to  fetch leave: $e");
     }
-    if (leave != null) {
-      createNewOnLeaveAttendances(dbHelper: dbHelper, leave: leave);
+
+    Account? userAccount;
+    try {
+      final response = await fetchAccount(dbHelper: dbHelper, leave: leave!);
+      userAccount = response;
+    } catch (e) {
+      debugPrint("Failed to fetch user account: $e");
+    }
+
+    if (leave != null && userAccount != null) {
+      createNewOnLeaveAttendances(
+          dbHelper: dbHelper, leave: leave, userAccount: userAccount);
     }
   }
 
@@ -143,9 +153,12 @@ class LeaveLogic {
   }
 
   Future<void> createNewOnLeaveAttendances(
-      {required SupabaseDbHelper dbHelper, required Leave leave}) async {
+      {required SupabaseDbHelper dbHelper,
+      required Leave leave,
+      required Account userAccount}) async {
     DateTime startDate = leave.startDate;
     DateTime endDate = leave.endDate;
+    int countedLeaveDays = 0;
 
     for (DateTime date = startDate;
         !date.isAfter(endDate);
@@ -174,6 +187,8 @@ class LeaveLogic {
           continue; // Skip if already marked as on_leave
         }
 
+        bool updatedFromAbsent = false;
+
         // Update existing "absent" records to "on_leave"
         for (final record in existingRecords) {
           if (record['attendance_status'] == 'absent') {
@@ -181,6 +196,7 @@ class LeaveLogic {
               'attendance_status': 'on_leave',
               'leave_id': leave.id,
             });
+            updatedFromAbsent = true;
           }
         }
 
@@ -194,9 +210,26 @@ class LeaveLogic {
           };
 
           await dbHelper.insert('attendance_v2', row);
+
+          countedLeaveDays++;
+        } else if (!updatedFromAbsent) {
+          countedLeaveDays++;
         }
       } catch (e) {
         debugPrint("Error processing date $date: $e");
+      }
+    }
+    if (countedLeaveDays > 0 && userAccount.role == 'intern') {
+      final newEndDate =
+          userAccount.endDate!.add(Duration(days: countedLeaveDays));
+      try {
+        Map<String, dynamic> updatedRow = {
+          'end_date': newEndDate.toUtc().toIso8601String(),
+        };
+        await dbHelper.updateWhere(
+            'accounts', 'id', userAccount.id, updatedRow);
+      } catch (e) {
+        debugPrint("Failed to update the end date: $e");
       }
     }
   }
