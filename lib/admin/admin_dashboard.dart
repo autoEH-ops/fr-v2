@@ -98,6 +98,13 @@ class _AdminDashboardState extends State<AdminDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        appBar: AppBar(
+          title: Text("View Employee Activity"),
+          centerTitle: true,
+          backgroundColor: Colors.white,
+          elevation: 1,
+          foregroundColor: Colors.black87,
+        ),
         body: _isLoading
             ? Center(child: const CircularProgressIndicator())
             : currentAttendances.isEmpty || activities.isEmpty

@@ -104,6 +104,13 @@ class _RequestStatusState extends State<RequestStatus> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text("View Employee Activity"),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        foregroundColor: Colors.black87,
+      ),
       body: Padding(
         padding: const EdgeInsets.only(top: 16.0),
         child: _isLoading

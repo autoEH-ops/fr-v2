@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
+import '../model/activity.dart';
 import '../model/attendance.dart';
 
 class RecordsLogic {
@@ -122,68 +123,106 @@ class RecordsLogic {
     return grouped;
   }
 
-  // Map<String, int> getAttendanceStatistics(
-  //     List<Attendance> attendances, int year, int month, Account account) {
-  //   int fine = 0;
-  //   int late = 0;
-  //   int absent = 0;
-  //   int leftEarly = 0;
+  Future<Map<String, int>> getAttendanceStatistics(
+      {required SupabaseDbHelper dbHelper, required Account account}) async {
+    List<Attendance> absentAttendances = [];
+    List<Attendance> onLeaveAttendances = [];
+    List<Activity> lateAttendances = [];
+    List<Activity> leftEarlyAttendances = [];
+    List<Attendance> fineAttendances = [];
+    try {
+      final response =
+          await dbHelper.getRowsWhereFieldForCurrentMonthWithCondition(
+              table: 'attendance_v2',
+              fieldName: 'account_id',
+              fieldValue: account.id,
+              conditionField: 'attendance_status',
+              conditionValue: 'absent',
+              dateTimeField: 'attendance_time',
+              fromMap: (row) => Attendance.fromMap(row));
+      absentAttendances = response;
+    } catch (e) {
+      debugPrint("Failed to fetch absent records: $e");
+    }
 
-  //   Map<String, Map<String, DateTime?>> groupedAttendances =
-  //       groupAttendancesByDate(attendances);
+    try {
+      final response =
+          await dbHelper.getRowsWhereFieldForCurrentMonthWithCondition(
+              table: 'attendance_v2',
+              fieldName: 'account_id',
+              fieldValue: account.id,
+              conditionField: 'attendance_status',
+              conditionValue: 'on_leave',
+              dateTimeField: 'attendance_time',
+              fromMap: (row) => Attendance.fromMap(row));
+      onLeaveAttendances = response;
+    } catch (e) {
+      debugPrint("Failed to fetch absent records: $e");
+    }
 
-  //   final createdAt = account.createdAt!;
-  //   final totalDaysInMonth = DateUtils.getDaysInMonth(year, month);
-  //   final today = DateTime.now();
+    try {
+      final response =
+          await dbHelper.getRowsWhereFieldForCurrentMonthWithCondition(
+              table: 'activities',
+              fieldName: 'account_id',
+              fieldValue: account.id,
+              conditionField: 'is_late',
+              conditionValue: true,
+              dateTimeField: 'activity_time',
+              fromMap: (row) => Activity.fromMap(row));
+      lateAttendances = response;
+    } catch (e) {
+      debugPrint("Failed to fetch absent records: $e");
+    }
 
-  //   for (int day = 1; day <= totalDaysInMonth; day++) {
-  //     final date = DateTime(year, month, day);
+    try {
+      final response =
+          await dbHelper.getRowsWhereFieldForCurrentMonthWithConditionNull(
+              table: 'activities',
+              fieldName: 'account_id',
+              fieldValue: account.id,
+              conditionField: 'message',
+              dateTimeField: 'activity_time',
+              fromMap: (row) => Activity.fromMap(row));
+      leftEarlyAttendances = response;
+    } catch (e) {
+      debugPrint("Failed to fetch absent records: $e");
+    }
 
-  //     // Skip Sundays
-  //     if (date.weekday == DateTime.sunday) continue; // Skip Sundays
-  //     // Skip future dates
-  //     if (date.isAfter(DateTime(today.year, today.month, today.day))) continue;
-  //     // Skip days before account creation if same month and year
-  //     // Skip days before account creation if same month and year
-  //     if (createdAt.year == year &&
-  //         createdAt.month == month &&
-  //         date.isBefore(createdAt)) {
-  //       continue;
-  //     }
+    final Set<DateTime> excludedDates = {
+      ...leftEarlyAttendances.map((a) => DateTime(
+          a.activityTime!.year, a.activityTime!.month, a.activityTime!.day)),
+      ...lateAttendances.map((a) => DateTime(
+          a.activityTime!.year, a.activityTime!.month, a.activityTime!.day)),
+    };
 
-  //     final dateKey =
-  //         "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+    try {
+      final response =
+          await dbHelper.getRowsWhereFieldForCurrentMonthWithCondition(
+              table: 'attendance_v2',
+              fieldName: 'account_id',
+              fieldValue: account.id,
+              conditionField: 'attendance_status',
+              conditionValue: 'check_in',
+              dateTimeField: 'attendance_time',
+              fromMap: (row) => Attendance.fromMap(row));
+      fineAttendances = response;
+    } catch (e) {
+      debugPrint("Failed to fetch absent records: $e");
+    }
 
-  //     final dayData = groupedAttendances[dateKey];
+    fineAttendances = fineAttendances.where((a) {
+      final date = DateTime(a.attendanceTime!.year, a.attendanceTime!.month,
+          a.attendanceTime!.day);
+      return !excludedDates.contains(date);
+    }).toList();
 
-  //     if (dayData == null) {
-  //       absent++;
-  //       continue;
-  //     }
-
-  //     final checkIn = dayData["check_in"]?.add(Duration(hours: 8));
-  //     final checkOut = dayData["check_out"]?.add(Duration(hours: 8));
-
-  //     if (checkIn == null && checkOut == null) {
-  //       absent++;
-  //     } else {
-  //       if (checkIn!.hour > 9 || (checkIn.hour == 9 && checkIn.minute > 0)) {
-  //         late++;
-  //       } else {
-  //         fine++;
-  //       }
-
-  //       if (checkOut != null && checkOut.hour < 18) {
-  //         leftEarly++;
-  //       }
-  //     }
-  //   }
-
-  //   return {
-  //     "Fine": fine,
-  //     "Late": late,
-  //     "Absent": absent,
-  //     "Left Early": leftEarly,
-  //   };
-  // }
+    return {
+      'absent': absentAttendances.length,
+      'on_leave': onLeaveAttendances.length,
+      'late': lateAttendances.length,
+      'left_early': leftEarlyAttendances.length,
+      'fine': fineAttendances.length,
+    };
+  }
 }

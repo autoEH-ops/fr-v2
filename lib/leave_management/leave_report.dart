@@ -45,7 +45,6 @@ class _LeaveReportState extends State<LeaveReport> {
     });
     final loadFilteredLeaves = await getFilteredLeaves();
 
-    debugPrint("Leave Request: ${loadFilteredLeaves.length}");
     setState(() {
       filteredLeaves = loadFilteredLeaves;
       _isLoading = false;
@@ -86,7 +85,7 @@ class _LeaveReportState extends State<LeaveReport> {
       adminAccount =
           await leaveLogic.fetchAdminAccount(dbHelper: dbHelper, leave: leave);
     }
-
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -188,7 +187,6 @@ class _LeaveReportState extends State<LeaveReport> {
     final years = List.generate(5, (i) => DateTime.now().year - 2 + i);
 
     return Scaffold(
-      appBar: AppBar(title: Text('Leave Report')),
       body: _isLoading
           ? Center(child: const CircularProgressIndicator())
           : allLeaveRequests.isEmpty
@@ -304,10 +302,6 @@ class _LeaveReportState extends State<LeaveReport> {
 
                                           final account = snapshot.data!;
                                           return Card(
-                                            color:
-                                                leave.leaveStatus == "approved"
-                                                    ? Colors.green
-                                                    : null,
                                             child: ListTile(
                                               title: Column(
                                                 crossAxisAlignment:

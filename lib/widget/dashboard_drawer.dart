@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../leave_management/leave_report.dart';
+import '../admin/admin_dashboard.dart';
 import '../login/login_page.dart';
 import '../geolocator/geolocator_service.dart';
-import '../leave_management/leave_dashboard.dart';
 import '../manage_accounts/manage_accounts.dart';
 import '../manage_system_settings/manage_settings.dart';
 import '../model/account.dart';
@@ -12,6 +11,7 @@ import '../model/setting.dart';
 import '../registration/register_attendance.dart';
 import '../request_changes/process_request.dart';
 import '../request_changes/request_changes.dart';
+import '../request_changes/request_status.dart';
 
 class DashboardDrawer {
   void _navigateTo(BuildContext context, Widget routeName) {
@@ -48,7 +48,7 @@ class DashboardDrawer {
                     ),
                   ),
                 )),
-            if (account.role == 'super_admin' || account.role == 'admin')
+            if (account.role == 'super_admin' || account.role == 'admin') ...[
               _drawerTile(
                 icon: Icons.person,
                 label: "Account Registration",
@@ -61,7 +61,6 @@ class DashboardDrawer {
                   ),
                 ),
               ),
-            if (account.role == 'super_admin' || account.role == 'admin')
               _drawerTile(
                 icon: Icons.settings,
                 label: "System Settings",
@@ -73,14 +72,6 @@ class DashboardDrawer {
                   ),
                 ),
               ),
-            if (account.role != 'admin' && account.role != "super_admin")
-              _drawerTile(
-                  icon: Icons.read_more,
-                  label: "Request Profile Change",
-                  onTap: () =>
-                      _navigateTo(context, RequestChanges(account: account)),
-                  color: Colors.lime.shade600),
-            if (account.role == 'super_admin' || account.role == 'admin')
               _drawerTile(
                   icon: Icons.read_more,
                   label: "Approval",
@@ -90,7 +81,6 @@ class DashboardDrawer {
                         account: account,
                       )),
                   color: Colors.indigoAccent.shade400),
-            if (account.role == 'super_admin' || account.role == 'admin')
               _drawerTile(
                   icon: Icons.manage_accounts,
                   label: "Manage Accounts",
@@ -100,24 +90,30 @@ class DashboardDrawer {
                             account: account, systemSettings: systemSettings),
                       ),
                   color: Colors.green),
-            _drawerTile(
-              icon: Icons.logout,
-              label: "Leave",
-              color: Colors.blueGrey.shade600,
-              onTap: () => _navigateTo(
-                context,
-                LeaveDashboard(account: account, ocrDictionary: ocrDictionary),
-              ),
-            ),
-            _drawerTile(
-              icon: Icons.logout,
-              label: "Leave Report",
-              color: Colors.blue.shade600,
-              onTap: () => _navigateTo(
-                context,
-                LeaveReport(),
-              ),
-            ),
+              _drawerTile(
+                  icon: Icons.visibility,
+                  label: "View Employee Activity",
+                  onTap: () => _navigateTo(
+                        context,
+                        AdminDashboard(
+                            account: account, systemSettings: systemSettings),
+                      ),
+                  color: Colors.lightBlue),
+            ],
+            if (account.role != 'admin' && account.role != "super_admin") ...[
+              _drawerTile(
+                  icon: Icons.read_more,
+                  label: "Request Profile Change",
+                  onTap: () =>
+                      _navigateTo(context, RequestChanges(account: account)),
+                  color: Colors.lime.shade600),
+              _drawerTile(
+                  icon: Icons.read_more,
+                  label: "Request Status",
+                  onTap: () =>
+                      _navigateTo(context, RequestStatus(account: account)),
+                  color: Colors.lime.shade600),
+            ],
             _drawerTile(
               icon: Icons.logout,
               label: "Logout",

@@ -18,12 +18,7 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
   final RecordsLogic recordsLogic = RecordsLogic();
   List<Attendance> attendances = [];
   List<Attendance> upcomings = [];
-  // Map<String, int> attendanceStats = {
-  //   "Fine": 0,
-  //   "Late": 0,
-  //   "Absent": 0,
-  //   "Left Early": 0,
-  // };
+  Map<String, int> attendanceCount = {};
   bool _isLoading = true;
 
   @override
@@ -37,21 +32,23 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
         dbHelper, widget.account);
     final loadUpcomings = await recordsLogic.fetchUpcomingOnLeave(
         account: widget.account, dbHelper: dbHelper);
+
+    final loadAttendanceCount = await recordsLogic.getAttendanceStatistics(
+        dbHelper: dbHelper, account: widget.account);
     setState(() {
       attendances = loadAttendances;
       upcomings = loadUpcomings;
-      // attendanceStats = recordsLogic.getAttendanceStatistics(
-      //     attendances,
-      //     DateTime.now().year.toInt(),
-      //     DateTime.now().month.toInt(),
-      //     widget.account);
+      attendanceCount = loadAttendanceCount;
       _isLoading = false;
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final groupedAttendances = recordsLogic.groupAttendancesByDate(attendances);
+    Map<String, Map<String, dynamic>> groupedAttendances =
+        recordsLogic.groupAttendancesByDate(attendances);
+    groupedAttendances = Map.fromEntries(groupedAttendances.entries.toList()
+      ..sort((a, b) => DateTime.parse(a.key).compareTo(DateTime.parse(b.key))));
     final upcomingLeaves = upcomings
         .where((a) => a.attendanceStatus == "on_leave" && a.leaveId != null)
         .toList();
@@ -86,25 +83,21 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _buildStatCard(
-                                      'Fine',
-                                      /* attendanceStats["Fine"] ?? */ -5,
-                                      Colors.green),
+                                  _buildStatCard('Fine',
+                                      attendanceCount['fine']!, Colors.green),
                                   _buildStatCard(
                                       'Late',
-                                      /* attendanceStats["Late"] ?? */ -5,
+                                      attendanceCount['late']!,
                                       Colors.amberAccent),
-                                  _buildStatCard(
-                                      'Absent',
-                                      /*  attendanceStats["Absent"] ?? */ -5,
-                                      Colors.red),
+                                  _buildStatCard('Absent',
+                                      attendanceCount['absent']!, Colors.red),
                                   _buildStatCard(
                                       'Left Early',
-                                      /*  attendanceStats["Left Early"] ?? */ -5,
+                                      attendanceCount["left_early"]!,
                                       Colors.purple),
                                   _buildStatCard(
                                       'On Leave',
-                                      /*  attendanceStats["Left Early"] ?? */ -5,
+                                      attendanceCount['on_leave']!,
                                       Colors.orange),
                                 ]
                                     .map((card) => Padding(
@@ -358,7 +351,6 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
     );
   }
 
-  // TODO: Build Stat Card
   Widget _buildStatCard(String title, int count, Color baseColor) {
     final Color bgColor = baseColor;
     final Color textColor = Colors.white;

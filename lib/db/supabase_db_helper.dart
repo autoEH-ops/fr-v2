@@ -243,6 +243,65 @@ class SupabaseDbHelper {
     }
   }
 
+  Future<List<T>> getRowsWhereFieldForCurrentMonthWithCondition<T>({
+    required String table,
+    required String fieldName,
+    required dynamic fieldValue,
+    required String conditionField,
+    required dynamic conditionValue,
+    required String dateTimeField, // e.g., 'activity_time'
+    required T Function(Map<String, dynamic>) fromMap,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final startOfNextMonth = DateTime(now.year, now.month + 1, 1);
+
+      final response = await supabase
+          .from(table)
+          .select()
+          .eq(fieldName, fieldValue)
+          .eq(conditionField, conditionValue)
+          .gte(dateTimeField, startOfMonth.toIso8601String())
+          .lt(dateTimeField, startOfNextMonth.toIso8601String());
+
+      return (response as List)
+          .map((row) => fromMap(row as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<T>> getRowsWhereFieldForCurrentMonthWithConditionNull<T>({
+    required String table,
+    required String fieldName,
+    required dynamic fieldValue,
+    required String conditionField,
+    required String dateTimeField, // e.g., 'activity_time'
+    required T Function(Map<String, dynamic>) fromMap,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final startOfNextMonth = DateTime(now.year, now.month + 1, 1);
+
+      final response = await supabase
+          .from(table)
+          .select()
+          .eq(fieldName, fieldValue)
+          .not(conditionField, 'is', null)
+          .gte(dateTimeField, startOfMonth.toIso8601String())
+          .lt(dateTimeField, startOfNextMonth.toIso8601String());
+
+      return (response as List)
+          .map((row) => fromMap(row as Map<String, dynamic>))
+          .toList();
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<T?> getRowWhereFieldForCurrentDay<T>({
     required String table,
     required String fieldName,
