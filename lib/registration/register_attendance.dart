@@ -33,7 +33,9 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
-  List<DateTime?> _dates = [];
+  DateTime? _startDate;
+  DateTime? _endDate;
+
   late ImagePicker imagePicker;
   late Account account;
   late FaceDetector faceDetector;
@@ -228,9 +230,8 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                             'email': _emailController.text.trim(),
                             'role': _selectedRole!,
                             'image_url': imageUrl,
-                            'start_date':
-                                _dates.first!.toUtc().toIso8601String(),
-                            'end_date': _dates.last!.toUtc().toIso8601String(),
+                            'start_date': _startDate!.toUtc().toIso8601String(),
+                            'end_date': _endDate!.toUtc().toIso8601String(),
                             'embeddings': recognition.embeddings
                           };
                           await guestLogic.insertRegisterAccountRequests(
@@ -251,9 +252,8 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                             'email': _emailController.text.trim(),
                             'role': _selectedRole!,
                             'image_url': imageUrl,
-                            'start_date':
-                                _dates.first!.toUtc().toIso8601String(),
-                            'end_date': _dates.last!.toUtc().toIso8601String(),
+                            'start_date': _startDate!.toUtc().toIso8601String(),
+                            'end_date': _endDate!.toUtc().toIso8601String(),
                           };
                           await dbHelper.insert('accounts', row);
                           final newAccount =
@@ -365,15 +365,15 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
         _selectedRole!,
         null,
         null,
-        _dates.first!,
-        _dates.last!,
+        _startDate!,
+        _endDate!,
       );
 
       debugPrint('Registered Account:');
       debugPrint('Phone: ${account.phone}');
       debugPrint('Email: ${account.email}');
       debugPrint('Role: ${account.role}');
-      debugPrint("dates: first - ${_dates.first} and last ${_dates.last}");
+      debugPrint("dates: first - $_startDate and last $_endDate");
 
       _showFaceRegistrationDialog();
     }
@@ -482,72 +482,30 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
                   validator: (value) =>
                       value == null ? 'Please select a role' : null,
                 ),
-                const SizedBox(height: 32),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Material(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () async {
-                          final results = await showCalendarDatePicker2Dialog(
-                            context: context,
-                            config: CalendarDatePicker2WithActionButtonsConfig(
-                              calendarType: CalendarDatePicker2Type.range,
-                            ),
-                            dialogSize: const Size(325, 400),
-                            value: _dates,
-                            borderRadius: BorderRadius.circular(15),
-                          );
-
-                          if (results != null) {
-                            setState(() {
-                              _dates = results;
-                            });
-                          }
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(10),
-                          child: Icon(Icons.calendar_today,
-                              color: Theme.of(context).colorScheme.primary),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            )
-                          ],
-                        ),
-                        child: Text(
-                          _dates.isEmpty
-                              ? 'Select a date range'
-                              : _dates
-                                  .whereType<DateTime>()
-                                  .map((d) =>
-                                      DateFormat('E, dd/MM/yyyy').format(d))
-                                  .join(' – '),
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                    ),
-                  ],
+                const SizedBox(height: 16),
+                Text(
+                  "Start Date",
+                  style: TextStyle(color: Colors.black54),
                 ),
+                const SizedBox(height: 8),
+                _buildSingleDatePicker(
+                  label: 'Start Date',
+                  selectedDate: _startDate,
+                  onDateSelected: (date) => setState(() => _startDate = date),
+                ),
+                const SizedBox(height: 16),
+                if (_selectedRole == 'intern') ...[
+                  Text(
+                    "End Date",
+                    style: TextStyle(color: Colors.black54),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildSingleDatePicker(
+                    label: 'End Date',
+                    selectedDate: _endDate,
+                    onDateSelected: (date) => setState(() => _endDate = date),
+                  ),
+                ],
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -617,6 +575,67 @@ class _RegisterAttendanceState extends State<RegisterAttendance> {
       validator: (value) => value == null || value.trim().isEmpty
           ? 'This field is required'
           : null,
+    );
+  }
+
+  Widget _buildSingleDatePicker({
+    required String label,
+    required DateTime? selectedDate,
+    required void Function(DateTime?) onDateSelected,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Material(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () async {
+              final result = await showCalendarDatePicker2Dialog(
+                context: context,
+                config: CalendarDatePicker2WithActionButtonsConfig(
+                  calendarType: CalendarDatePicker2Type.single,
+                ),
+                dialogSize: const Size(325, 400),
+                value: [selectedDate],
+                borderRadius: BorderRadius.circular(15),
+              );
+
+              if (result != null && result.isNotEmpty) {
+                onDateSelected(result.first);
+              }
+            },
+            child: const Padding(
+              padding: EdgeInsets.all(10),
+              child: Icon(Icons.calendar_today, color: Colors.blueAccent),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Text(
+              selectedDate != null
+                  ? DateFormat('E, dd/MM/yyyy').format(selectedDate)
+                  : 'Select $label',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

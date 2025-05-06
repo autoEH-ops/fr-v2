@@ -1,3 +1,4 @@
+import 'package:attendance_system_fr_v3/persistence_storage/secure_storage_service.dart';
 import 'package:flutter/material.dart';
 
 import '../admin/admin_dashboard.dart';
@@ -103,27 +104,31 @@ class DashboardDrawer {
             if (account.role != 'admin' && account.role != "super_admin") ...[
               _drawerTile(
                   icon: Icons.read_more,
-                  label: "Request Profile Change",
+                  label: "Request Change",
                   onTap: () =>
                       _navigateTo(context, RequestChanges(account: account)),
-                  color: Colors.lime.shade600),
+                  color: Colors.blue.shade600),
               _drawerTile(
-                  icon: Icons.read_more,
+                  icon: Icons.info_outline,
                   label: "Request Status",
                   onTap: () =>
                       _navigateTo(context, RequestStatus(account: account)),
-                  color: Colors.lime.shade600),
+                  color: Colors.orange.shade600),
             ],
             _drawerTile(
-              icon: Icons.logout,
-              label: "Logout",
-              color: Colors.blueGrey.shade600,
-              onTap: () => Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-                (route) => false,
-              ),
-            ),
+                icon: Icons.logout,
+                label: "Logout",
+                color: Colors.blueGrey.shade600,
+                onTap: () async {
+                  final secureStorage = SecureStorageService();
+                  await secureStorage.logout();
+                  if (!context.mounted) return;
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
+                  );
+                }),
           ],
         ),
       );

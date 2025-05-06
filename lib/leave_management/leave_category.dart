@@ -160,7 +160,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
             return day.weekday != DateTime.sunday;
           });
 
-  Future<void> onSubmitAnnualLeave({
+  Future<bool> onSubmitAnnualLeave({
     required DateTime startDate,
     required DateTime endDate,
     File? selectedImage,
@@ -195,6 +195,8 @@ class _LeaveCategoryState extends State<LeaveCategory> {
     if (widget.onRefresh != null) {
       await widget.onRefresh!();
     }
+
+    return false;
   }
 
   CalendarDatePicker2Config calendarConfigMedicalLeave() =>
@@ -207,7 +209,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
             return day.weekday != DateTime.sunday;
           });
 
-  Future<void> onSubmitMedicalLeave({
+  Future<bool> onSubmitMedicalLeave({
     required DateTime startDate,
     required DateTime endDate,
     File? selectedImage,
@@ -253,6 +255,10 @@ class _LeaveCategoryState extends State<LeaveCategory> {
           leaveType: leaveType,
           reason: reason,
           attachmentUrl: attachmentUrl);
+      if (widget.onRefresh != null) {
+        await widget.onRefresh!();
+      }
+      return true;
     } else {
       await leaveLogic.createLeaveRequest(
           dbHelper: dbHelper,
@@ -262,9 +268,10 @@ class _LeaveCategoryState extends State<LeaveCategory> {
           leaveType: leaveType,
           reason: reason,
           attachmentUrl: attachmentUrl);
-    }
-    if (widget.onRefresh != null) {
-      await widget.onRefresh!();
+      if (widget.onRefresh != null) {
+        await widget.onRefresh!();
+      }
+      return false;
     }
   }
 
@@ -278,7 +285,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
             return day.weekday != DateTime.sunday;
           });
 
-  Future<void> onSubmitEmergencyLeave({
+  Future<bool> onSubmitEmergencyLeave({
     required DateTime startDate,
     required DateTime endDate,
     File? selectedImage,
@@ -313,5 +320,6 @@ class _LeaveCategoryState extends State<LeaveCategory> {
     if (widget.onRefresh != null) {
       await widget.onRefresh!();
     }
+    return false;
   }
 }

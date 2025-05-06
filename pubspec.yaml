@@ -42,6 +42,7 @@ dependencies:
   flutter_dotenv: ^5.2.1
   location: ^8.0.0
   calendar_date_picker2: ^2.0.0
+  flutter_secure_storage: ^9.2.4
 dev_dependencies:
   flutter_test:
     sdk: flutter

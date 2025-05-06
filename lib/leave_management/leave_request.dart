@@ -14,7 +14,7 @@ class LeaveRequest extends StatefulWidget {
   final String leaveType;
   final int? annualLeaveUsed;
   final CalendarDatePicker2Config datePickerConfig;
-  final Future<void> Function(
+  final Future<bool> Function(
       {required DateTime startDate,
       required DateTime endDate,
       File? selectedImage,
@@ -39,6 +39,14 @@ class _LeaveRequestState extends State<LeaveRequest> {
   LeaveLogic leaveLogic = LeaveLogic();
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
   final TextEditingController _reasonController = TextEditingController();
+  List<String> reasons = [
+    'Sick',
+    'Personal',
+    'Emergency',
+    'Family Matter',
+    'Other (Please Specify)'
+  ];
+  String? selectedReason;
 
   File? _selectedImage;
   String? _imagePath;
@@ -63,8 +71,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
   Future<void> _submitRequest() async {
     DateTime? startDate = _dates.isNotEmpty ? _dates.first : null;
     DateTime? endDate = _dates.length > 1 ? _dates.last : null;
-    String reason = _reasonController.text.trim();
-    int wordCount = reason.split(RegExp(r'\s+')).length;
+
     if (startDate == null || endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -91,16 +98,30 @@ class _LeaveRequestState extends State<LeaveRequest> {
       return;
     }
 
-    if (wordCount <= 5) {
+    if (selectedReason == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Reason must be more than 5 words.'),
+          content: Text('Please choose a reason.'),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red,
         ),
       );
       return;
     }
+    if (selectedReason == "Other (Please Specify)" &&
+        _reasonController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please specify a reason.'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    String reason = selectedReason == "Other (Please Specify)"
+        ? _reasonController.text.trim()
+        : selectedReason!;
 
     if (widget.leaveType == "medical_leave" && _selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -113,14 +134,19 @@ class _LeaveRequestState extends State<LeaveRequest> {
       return;
     }
 
-    widget.onSubmit(
+    bool autoApproved = await widget.onSubmit(
         endDate: endDate,
         startDate: startDate,
         selectedImage: _selectedImage,
         reason: reason);
 
+    if (!mounted) return;
+    debugPrint("autoApproved bool: $autoApproved");
+
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text("Leave request is pending. Wait for admin approval"),
+      content: Text(autoApproved == true
+          ? "Leave auto-approved. Get well soon."
+          : "Leave request is pending. Wait for admin approval"),
       backgroundColor: Colors.green,
       behavior: SnackBarBehavior.floating,
     ));
@@ -175,16 +201,38 @@ class _LeaveRequestState extends State<LeaveRequest> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
-            TextField(
-              controller: _reasonController,
+            DropdownButtonFormField<String>(
+              value: selectedReason,
+              items: reasons
+                  .map((reason) => DropdownMenuItem(
+                        value: reason,
+                        child: Text(reason),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedReason = value;
+                });
+              },
               decoration: InputDecoration(
-                hintText: 'Enter your reason',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
+                labelText: 'Reason to Leave',
+                border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(horizontal: 12),
               ),
-              maxLines: 3,
             ),
+            if (selectedReason == "Other (Please Specify)") ...[
+              const SizedBox(height: 12.0),
+              TextField(
+                controller: _reasonController,
+                decoration: InputDecoration(
+                  hintText: 'Enter your reason',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                maxLines: 3,
+              ),
+            ],
             const SizedBox(height: 30),
             Text(
               "Attachment ${widget.leaveType == "medical_leave" ? "" : "(Optional)"}",

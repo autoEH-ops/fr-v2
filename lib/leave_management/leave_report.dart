@@ -18,14 +18,45 @@ class _LeaveReportState extends State<LeaveReport> {
   List<Leave> filteredLeaves = [];
   LeaveLogic leaveLogic = LeaveLogic();
   SupabaseDbHelper dbHelper = SupabaseDbHelper();
+  Map<int, Account> accountMap = {};
 
   bool _isLoading = true;
   bool _isFiltering = false;
+
+  String searchQuery = '';
+  int selectedMonth = DateTime.now().month;
+  int selectedYear = DateTime.now().year;
 
   @override
   void initState() {
     super.initState();
     loadLatestData();
+  }
+
+  Future<void> loadLatestData() async {
+    final loadAllLeaveRequest =
+        await leaveLogic.fetchAllLeaveRequest(dbHelper: dbHelper);
+
+    final uniqueAccountIds =
+        loadAllLeaveRequest.map((l) => l.accountId).toSet();
+    final allAccounts = await leaveLogic.fetchAccountsByIds(
+        uniqueAccountIds.toList(), dbHelper);
+
+    // Cache accounts
+    Map<int, Account> accountCache = {
+      for (var acc in allAccounts) acc.id!: acc,
+    };
+
+    setState(() {
+      allLeaveRequests = loadAllLeaveRequest;
+      accountMap = accountCache;
+    });
+
+    final loadFilteredLeaves = await getFilteredLeaves();
+    setState(() {
+      filteredLeaves = loadFilteredLeaves;
+      _isLoading = false;
+    });
   }
 
   void refreshFilteredLeaves() async {
@@ -37,39 +68,20 @@ class _LeaveReportState extends State<LeaveReport> {
     });
   }
 
-  Future<void> loadLatestData() async {
-    final loadAllLeaveRequest =
-        await leaveLogic.fetchAllLeaveRequest(dbHelper: dbHelper);
-    setState(() {
-      allLeaveRequests = loadAllLeaveRequest;
-    });
-    final loadFilteredLeaves = await getFilteredLeaves();
-
-    setState(() {
-      filteredLeaves = loadFilteredLeaves;
-      _isLoading = false;
-    });
-  }
-
-  String searchQuery = '';
-  int selectedMonth = DateTime.now().month;
-  int selectedYear = DateTime.now().year;
-  bool viewAll = false;
-
   Future<List<Leave>> getFilteredLeaves() async {
     List<Leave> filtered = [];
 
     for (Leave leave in allLeaveRequests) {
-      Account? userAccount =
-          await leaveLogic.fetchAccount(dbHelper: dbHelper, leave: leave);
+      final userAccount = accountMap[leave.accountId];
+      if (userAccount == null) continue;
 
       final matchesSearch =
-          userAccount!.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
+          userAccount.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
               leave.leaveType.toLowerCase().contains(searchQuery.toLowerCase());
 
       final date = leave.startDate;
       final matchesMonthYear =
-          viewAll || (date.month == selectedMonth && date.year == selectedYear);
+          (date.month == selectedMonth && date.year == selectedYear);
 
       if (matchesSearch && matchesMonthYear) {
         filtered.add(leave);
@@ -92,9 +104,8 @@ class _LeaveReportState extends State<LeaveReport> {
         title: const Text("Leave Details"),
         content: ConstrainedBox(
           constraints: BoxConstraints(
-            maxHeight: MediaQuery.of(context).size.height *
-                0.7, // 70% of screen height
-            maxWidth: 400, // Optional: control width
+            maxHeight: MediaQuery.of(context).size.height * 0.7,
+            maxWidth: 400,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -188,11 +199,9 @@ class _LeaveReportState extends State<LeaveReport> {
 
     return Scaffold(
       body: _isLoading
-          ? Center(child: const CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator())
           : allLeaveRequests.isEmpty
-              ? const Center(
-                  child: Text("No leave request found."),
-                )
+              ? const Center(child: Text("No leave request found."))
               : Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Column(
@@ -202,28 +211,29 @@ class _LeaveReportState extends State<LeaveReport> {
                         children: [
                           Expanded(
                             child: TextField(
-                                decoration: InputDecoration(
-                                  hintText: "Search by name or type",
-                                  prefixIcon: Icon(Icons.search),
-                                  border: OutlineInputBorder(),
-                                  contentPadding:
-                                      EdgeInsets.symmetric(horizontal: 12),
-                                ),
-                                onChanged: (value) {
-                                  setState(() => searchQuery = value);
-                                  refreshFilteredLeaves();
-                                }),
+                              decoration: const InputDecoration(
+                                hintText: "Search by name or type",
+                                prefixIcon: Icon(Icons.search),
+                                border: OutlineInputBorder(),
+                                contentPadding:
+                                    EdgeInsets.symmetric(horizontal: 12),
+                              ),
+                              onChanged: (value) {
+                                setState(() => searchQuery = value);
+                                refreshFilteredLeaves();
+                              },
+                            ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 10),
-                      // 📅 Filter Row + View All Checkbox
+                      const SizedBox(height: 10),
+                      // 📅 Filter Row
                       Row(
                         children: [
                           Expanded(
                             child: DropdownButtonFormField<int>(
                               value: selectedMonth,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: "Month",
                                 border: OutlineInputBorder(),
                               ),
@@ -239,11 +249,11 @@ class _LeaveReportState extends State<LeaveReport> {
                               },
                             ),
                           ),
-                          SizedBox(width: 10),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: DropdownButtonFormField<int>(
                               value: selectedYear,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: "Year",
                                 border: OutlineInputBorder(),
                               ),
@@ -252,84 +262,92 @@ class _LeaveReportState extends State<LeaveReport> {
                                       value: y, child: Text(y.toString())))
                                   .toList(),
                               onChanged: (value) {
-                                setState(() => selectedMonth = value!);
+                                setState(() => selectedYear = value!);
                                 refreshFilteredLeaves();
                               },
                             ),
                           ),
-                          SizedBox(width: 10),
-                          Column(
-                            children: [
-                              Checkbox(
-                                value: viewAll,
-                                onChanged: (val) =>
-                                    setState(() => viewAll = val!),
-                              ),
-                              Text("View All"),
-                            ],
-                          )
                         ],
                       ),
-                      SizedBox(height: 10),
+                      const SizedBox(height: 10),
                       // 📋 Leave List
                       Expanded(
                         child: _isFiltering
-                            ? Center(child: const CircularProgressIndicator())
+                            ? const Center(child: CircularProgressIndicator())
                             : filteredLeaves.isEmpty
-                                ? Center(child: Text("No leave records found."))
-                                : ListView.builder(
-                                    itemCount: filteredLeaves.length,
-                                    itemBuilder: (context, index) {
-                                      final leave = filteredLeaves[index];
-
-                                      return FutureBuilder<Account?>(
-                                        future: leaveLogic.fetchAccount(
-                                            dbHelper: dbHelper, leave: leave),
-                                        builder: (context, snapshot) {
-                                          if (snapshot.connectionState ==
-                                              ConnectionState.waiting) {
-                                            return ListTile(
-                                              title: Text('Loading account...'),
-                                            );
-                                          }
-
-                                          if (snapshot.hasError ||
-                                              !snapshot.hasData) {
-                                            return ListTile(
-                                              title: Text('Unknown account'),
-                                            );
-                                          }
-
-                                          final account = snapshot.data!;
-                                          return Card(
-                                            child: ListTile(
-                                              title: Column(
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(account.name),
-                                                  Text(
-                                                      "(${leaveLogic.readableStrings(leave.leaveType)})")
-                                                ],
-                                              ),
-                                              subtitle: Text(
-                                                "From: ${DateFormat.yMMMd().format(leave.startDate)}  To: ${DateFormat.yMMMd().format(leave.endDate)}",
-                                                style: TextStyle(fontSize: 13),
-                                              ),
-                                              trailing: Text(
-                                                  "${leaveLogic.daysExcludingSundays(leave.startDate, leave.endDate)} days"),
-                                              onTap: () => _showLeaveDetails(
-                                                  leave, account),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
+                                ? const Center(
+                                    child: Text("No leave records found."))
+                                : ListView(
+                                    children: [
+                                      _buildStatusSection(
+                                          "Pending", "pending", Colors.orange),
+                                      _buildStatusSection(
+                                          "Approved", "approved", Colors.green),
+                                      _buildStatusSection(
+                                          "Rejected", "rejected", Colors.red),
+                                    ],
                                   ),
                       ),
                     ],
                   ),
                 ),
+    );
+  }
+
+  Widget _buildStatusSection(String title, String status, Color color) {
+    final leavesByStatus =
+        filteredLeaves.where((l) => l.leaveStatus == status).toList();
+
+    if (leavesByStatus.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "$title (${leavesByStatus.length})",
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold, color: color),
+          ),
+          Text("No $title requests."),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            "$title (${leavesByStatus.length})",
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold, color: color),
+          ),
+        ),
+        ...leavesByStatus.map((leave) {
+          final account = accountMap[leave.accountId];
+          if (account == null) return const SizedBox.shrink(); // safety
+
+          return Card(
+            child: ListTile(
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(account.name),
+                  Text("(${leaveLogic.readableStrings(leave.leaveType)})"),
+                ],
+              ),
+              subtitle: Text(
+                "From: ${DateFormat.yMMMd().format(leave.startDate)}  To: ${DateFormat.yMMMd().format(leave.endDate)}",
+                style: const TextStyle(fontSize: 13),
+              ),
+              trailing: Text(
+                "${leaveLogic.daysExcludingSundays(leave.startDate, leave.endDate)} days",
+              ),
+              onTap: () => _showLeaveDetails(leave, account),
+            ),
+          );
+        }),
+      ],
     );
   }
 }

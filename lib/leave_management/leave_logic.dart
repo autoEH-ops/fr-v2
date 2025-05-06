@@ -319,6 +319,16 @@ class LeaveLogic {
     return leaves;
   }
 
+  Future<List<Account>> fetchAccountsByIds(
+      List<int> ids, SupabaseDbHelper dbHelper) async {
+    if (ids.isEmpty) return [];
+
+    final response =
+        await dbHelper.supabase.from('accounts').select().inFilter('id', ids);
+
+    return (response as List).map((data) => Account.fromMap(data)).toList();
+  }
+
   int daysExcludingSundays(DateTime start, DateTime end) {
     int count = 0;
     DateTime current = start;

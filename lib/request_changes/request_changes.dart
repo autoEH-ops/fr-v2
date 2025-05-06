@@ -93,7 +93,7 @@ class _RequestChangesState extends State<RequestChanges> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Request Profile Change"),
+        title: Text("Request Change"),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 1,

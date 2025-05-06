@@ -81,6 +81,26 @@ class _LeaveDashboardState extends State<LeaveDashboard> {
   }
 
   Widget _buildApplyPage() {
+    final pendingLeaves = leaves
+        .where((leave) =>
+            leave.leaveStatus == 'pending' &&
+            leave.appliedAt != null &&
+            leave.appliedAt!
+                .isAfter(DateTime.now().subtract(const Duration(days: 30))))
+        .toList();
+
+    final approvedLeaves = leaves
+        .where((leave) =>
+            leave.leaveStatus == 'approved' &&
+            leave.startDate.isAfter(DateTime.now()))
+        .toList();
+    final rejectedLeaves = leaves
+        .where((leave) =>
+            leave.leaveStatus == 'rejected' &&
+            leave.approvedAt != null &&
+            leave.approvedAt!
+                .isAfter(DateTime.now().subtract(const Duration(days: 30))))
+        .toList();
     return _isLoading
         ? Center(child: const CircularProgressIndicator())
         : Padding(
@@ -123,44 +143,20 @@ class _LeaveDashboardState extends State<LeaveDashboard> {
 
                 // Leave Requests List
                 Expanded(
-                  child: leaves.isEmpty
-                      ? const Center(
-                          child: Text("No leave request found."),
-                        )
-                      : ListView.builder(
-                          itemCount: leaves.length,
-                          itemBuilder: (context, index) {
-                            final leave = leaves[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: ListTile(
-                                  leading: const Icon(Icons.calendar_month),
-                                  title: Text(leaveLogic
-                                      .readableStrings(leave.leaveType)),
-                                  subtitle: Text(
-                                    'From: ${leaveLogic.formatTime(leave.startDate)} \nTo: ${leaveLogic.formatTime(leave.endDate)}',
-                                  ),
-                                  trailing: Text(
-                                    leaveLogic
-                                        .readableStrings(leave.leaveStatus),
-                                    style: TextStyle(
-                                      color: leave.leaveStatus == 'approved'
-                                          ? Colors.green
-                                          : (leave.leaveStatus == 'rejected'
-                                              ? Colors.red
-                                              : Colors.orange),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  onTap: () =>
-                                      _showDialogRequestInformation(leave)),
-                            );
-                          },
-                        ),
-                ),
+                    child: leaves.isEmpty
+                        ? const Center(
+                            child: Text("No leave request found."),
+                          )
+                        : ListView(
+                            children: [
+                              _buildLeaveSection(
+                                  "Pending", pendingLeaves, Colors.orange),
+                              _buildLeaveSection(
+                                  "Approved", approvedLeaves, Colors.green),
+                              _buildLeaveSection(
+                                  "Rejected", rejectedLeaves, Colors.red),
+                            ],
+                          )),
               ],
             ),
           );
@@ -232,6 +228,51 @@ class _LeaveDashboardState extends State<LeaveDashboard> {
               _currentPage == pageIndex ? FontWeight.bold : FontWeight.normal,
         ),
       ),
+    );
+  }
+
+  Widget _buildLeaveSection(
+      String title, List<Leave> leaves, Color statusColor) {
+    if (leaves.isEmpty) return SizedBox(); // Hide if no data
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: statusColor,
+            ),
+          ),
+        ),
+        ...leaves.map((leave) {
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 4),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ListTile(
+              leading: const Icon(Icons.calendar_month),
+              title: Text(leaveLogic.readableStrings(leave.leaveType)),
+              subtitle: Text(
+                'From: ${leaveLogic.formatTime(leave.startDate)} \nTo: ${leaveLogic.formatTime(leave.endDate)}',
+              ),
+              trailing: Text(
+                leaveLogic.readableStrings(leave.leaveStatus),
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onTap: () => _showDialogRequestInformation(leave),
+            ),
+          );
+        }),
+      ],
     );
   }
 }

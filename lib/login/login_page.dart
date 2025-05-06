@@ -4,6 +4,7 @@ import '../attendance_dashboard/attendance_dashboard.dart';
 import '../db/supabase_db_helper.dart';
 import '../model/account.dart';
 import '../model/setting.dart';
+import '../persistence_storage/secure_storage_service.dart';
 import '../registration/register_attendance.dart';
 import 'login_service.dart';
 
@@ -31,6 +32,11 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
     inputController.dispose();
     phoneController.dispose();
     super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
   }
 
   Future<void> requestOtp() async {
@@ -84,6 +90,8 @@ class _LoginPageState extends State<LoginPage> with TickerProviderStateMixin {
                 account: account, systemSettings: systemSettings)),
       );
       loginService.updateOTP(account.id!, "");
+      final secureStorage = SecureStorageService();
+      await secureStorage.saveLogin(account.id.toString());
     } else {
       _showDialog("Error", "Please request OTP first.");
     }

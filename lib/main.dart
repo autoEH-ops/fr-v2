@@ -1,12 +1,59 @@
+import 'package:attendance_system_fr_v3/attendance_dashboard/attendance_dashboard.dart';
 import 'package:camera/camera.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+import 'db/supabase_db_helper.dart';
 import 'login/login_page.dart';
+import 'model/account.dart';
+import 'model/setting.dart';
+import 'persistence_storage/secure_storage_service.dart';
 
 late List<CameraDescription> cameras;
+SupabaseDbHelper dbHelper = SupabaseDbHelper();
+
+Future<Account?> getAccountById(int id) async {
+  final response =
+      await dbHelper.getRowByField('accounts', 'id', id, Account.fromMap);
+
+  if (response != null) {
+    return response;
+  }
+  return null;
+}
+
+Future<List<Setting>> getSystemSettings() async {
+  List<Setting> systemSettings = [];
+
+  try {
+    final response = await dbHelper.getAllRows(
+        'system_settings', (row) => Setting.fromMap(row));
+    systemSettings = response;
+  } catch (e) {
+    debugPrint("Failed to fetch system settings: $e");
+  }
+  return systemSettings;
+}
+
+Future<Widget> getInitialScreen() async {
+  final secureStorage = SecureStorageService();
+  final accountId = await secureStorage.getLoggedInAccountId();
+
+  if (accountId != null) {
+    final int actualAccountId = int.parse(accountId);
+    final account = await getAccountById(actualAccountId);
+    if (account != null) {
+      final settings = await getSystemSettings();
+      return AttendanceDashboard(account: account, systemSettings: settings);
+    }
+  }
+
+  return const LoginPage();
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -16,6 +63,7 @@ void main() async {
   } catch (e) {
     throw ".env is not initialized: $e";
   }
+
   try {
     await Firebase.initializeApp(
       options: FirebaseOptions(
@@ -43,7 +91,7 @@ void main() async {
   }
 
   cameras = await availableCameras();
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -51,16 +99,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('Create by 629 (Izzul)');
+    debugPrint('Created by 629 (Izzul)');
     return ScreenUtilInit(
-      designSize: Size(375, 812),
-      builder: (context, child) => child!,
-      child: MaterialApp(
+      designSize: const Size(375, 812),
+      builder: (context, child) => MaterialApp(
         title: 'Attendance with Face Recognition',
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: LoginPage(),
+        home: FutureBuilder<Widget>(
+          future: getInitialScreen(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              return snapshot.data!;
+            } else {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+          },
+        ),
       ),
     );
   }
