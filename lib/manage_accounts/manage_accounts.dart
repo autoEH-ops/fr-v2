@@ -215,7 +215,7 @@ class _ManageAccountsState extends State<ManageAccounts> {
                           : ListView.builder(
                               itemCount: filteredAccounts.length,
                               itemBuilder: (context, index) {
-                                final account = accounts[index];
+                                final account = filteredAccounts[index];
                                 final isSelected =
                                     selectedAccounts.contains(account);
 

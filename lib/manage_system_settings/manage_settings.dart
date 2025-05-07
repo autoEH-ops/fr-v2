@@ -69,10 +69,14 @@ class _ManageSettingsState extends State<ManageSettings> {
     try {
       Map<String, double> location = await settingsLogic.getCurrentLatAndLong(
           geolocatorService: geolocatorService);
+      final latIndex =
+          systemSettings.indexWhere((s) => s.setting == 'location_lat');
+      final longIndex =
+          systemSettings.indexWhere((s) => s.setting == 'location_long');
       setState(() {
         _isLoading = true;
-        _controllers[0].text = location['lat'].toString();
-        _controllers[1].text = location['long'].toString();
+        _controllers[latIndex].text = location['lat'].toString();
+        _controllers[longIndex].text = location['long'].toString();
       });
     } catch (e) {
       debugPrint("Failed to get location.");

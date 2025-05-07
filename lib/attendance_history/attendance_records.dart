@@ -69,94 +69,91 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
                     child: Padding(
                       padding: const EdgeInsets.only(
                           bottom: 32), // prevent content cutoff
-                      child: Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              recordsLogic.formatMonthAndYear(),
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 18),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              child: SingleChildScrollView(
-                                scrollDirection: Axis.horizontal,
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    _buildStatCard('Fine',
-                                        attendanceCount['fine']!, Colors.green),
-                                    _buildStatCard(
-                                        'Late',
-                                        attendanceCount['late']!,
-                                        Colors.amberAccent),
-                                    _buildStatCard('Absent',
-                                        attendanceCount['absent']!, Colors.red),
-                                    _buildStatCard(
-                                        'Left Early',
-                                        attendanceCount["left_early"]!,
-                                        Colors.purple),
-                                    _buildStatCard(
-                                        'On Leave',
-                                        attendanceCount['on_leave']!,
-                                        Colors.orange),
-                                  ]
-                                      .map((card) => Padding(
-                                            padding: const EdgeInsets.only(
-                                                right: 12),
-                                            child: SizedBox(
-                                                width: 100,
-                                                child:
-                                                    card), // fixed width for consistent sizing
-                                          ))
-                                      .toList(),
-                                ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            recordsLogic.formatMonthAndYear(),
+                            style: const TextStyle(
+                                fontWeight: FontWeight.bold, fontSize: 18),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            child: SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  _buildStatCard('Fine',
+                                      attendanceCount['fine']!, Colors.green),
+                                  _buildStatCard(
+                                      'Late',
+                                      attendanceCount['late']!,
+                                      Colors.amberAccent),
+                                  _buildStatCard('Absent',
+                                      attendanceCount['absent']!, Colors.red),
+                                  _buildStatCard(
+                                      'Left Early',
+                                      attendanceCount["left_early"]!,
+                                      Colors.purple),
+                                  _buildStatCard(
+                                      'On Leave',
+                                      attendanceCount['on_leave']!,
+                                      Colors.orange),
+                                ]
+                                    .map((card) => Padding(
+                                          padding:
+                                              const EdgeInsets.only(right: 12),
+                                          child: SizedBox(
+                                              width: 100,
+                                              child:
+                                                  card), // fixed width for consistent sizing
+                                        ))
+                                    .toList(),
                               ),
                             ),
-                            if (filteredUpcoming.isNotEmpty) ...[
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: Text("Upcoming",
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18)),
-                              ),
-                              ...filteredUpcoming.map((attendance) {
-                                final dateTimeInfo =
-                                    recordsLogic.formatUpcomingTime(
-                                        attendance.attendanceTime);
-                                return _buildUpcomingLeaveCard(dateTimeInfo);
-                              })
-                            ],
+                          ),
+                          if (filteredUpcoming.isNotEmpty) ...[
                             const Padding(
-                              padding: EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
-                              child: Text("Attendance List",
+                              padding: EdgeInsets.symmetric(horizontal: 16),
+                              child: Text("Upcoming",
                                   style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 18)),
                             ),
-                            ...groupedAttendances.entries.where((entry) {
-                              final entryDate = DateTime.parse(entry.key);
-                              return entryDate.isBefore(DateTime.now()) ||
-                                  entryDate.isAtSameMomentAs(DateTime.now());
-                            }).map((entry) {
-                              final checkIn = entry.value['check_in'];
-                              final checkOut = entry.value['check_out'];
-                              final onLeave = entry.value['on_leave'];
-                              final absent = entry.value['absent'];
-                              final upcoming = recordsLogic.formatUpcomingTime(
-                                  DateTime.parse(entry.key));
-                              final dateTimeInfo = recordsLogic
-                                  .formatAttendanceTime(checkIn, checkOut);
-                              return _buildAttendanceCard(
-                                  dateTimeInfo, onLeave, upcoming, absent);
-                            }),
+                            ...filteredUpcoming.map((attendance) {
+                              final dateTimeInfo =
+                                  recordsLogic.formatUpcomingTime(
+                                      attendance.attendanceTime);
+                              return _buildUpcomingLeaveCard(dateTimeInfo);
+                            })
                           ],
-                        ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 12),
+                            child: Text("Attendance List",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 18)),
+                          ),
+                          ...groupedAttendances.entries.where((entry) {
+                            final entryDate = DateTime.parse(entry.key);
+                            return entryDate.isBefore(DateTime.now()) ||
+                                entryDate.isAtSameMomentAs(DateTime.now());
+                          }).map((entry) {
+                            final checkIn = entry.value['check_in'];
+                            final checkOut = entry.value['check_out'];
+                            final onLeave = entry.value['on_leave'];
+                            final absent = entry.value['absent'];
+                            final upcoming = recordsLogic
+                                .formatUpcomingTime(DateTime.parse(entry.key));
+                            final dateTimeInfo = recordsLogic
+                                .formatAttendanceTime(checkIn, checkOut);
+                            return _buildAttendanceCard(
+                                dateTimeInfo, onLeave, upcoming, absent);
+                          }),
+                        ],
                       ),
                     ),
                   ));
@@ -360,35 +357,33 @@ class _AttendanceRecordsState extends State<AttendanceRecords> {
   Widget _buildStatCard(String title, int count, Color baseColor) {
     final Color bgColor = baseColor;
     final Color textColor = Colors.white;
-    return Expanded(
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: bgColor,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: textColor,
-                ),
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: bgColor,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: textColor,
               ),
-              const SizedBox(height: 4),
-              Text(
-                "$count",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: textColor,
-                ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "$count",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: textColor,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
