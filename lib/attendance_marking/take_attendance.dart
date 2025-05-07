@@ -26,6 +26,8 @@ class _TakeAttendanceState extends State<TakeAttendance> {
   bool _isCameraInitialized = false;
   bool isBusy = false;
   bool hasRecognizedFace = false;
+  bool _isWidgetDisposed = false;
+  bool _isRecognizerClosed = false;
 
   late Size size;
   late CameraDescription description = cameras[1];
@@ -59,7 +61,7 @@ class _TakeAttendanceState extends State<TakeAttendance> {
 
       await controller.initialize();
 
-      if (!mounted) return;
+      if (!mounted || _isWidgetDisposed) return;
       setState(() {
         _isCameraInitialized = true;
       });
@@ -88,6 +90,7 @@ class _TakeAttendanceState extends State<TakeAttendance> {
 
   @override
   void dispose() {
+    _isWidgetDisposed = true;
     if (_isCameraInitialized && controller.value.isInitialized) {
       if (controller.value.isStreamingImages) {
         controller.stopImageStream();
@@ -95,6 +98,7 @@ class _TakeAttendanceState extends State<TakeAttendance> {
       controller.dispose();
     }
     recognizer.close();
+    _isRecognizerClosed = true;
     super.dispose();
   }
 
@@ -144,6 +148,7 @@ class _TakeAttendanceState extends State<TakeAttendance> {
           width: faceRect.width.toInt(),
           height: faceRect.height.toInt());
 
+      if (_isRecognizerClosed || _isWidgetDisposed) return;
       Recognition recognition =
           recognizer.recognize(croppedFace, face.boundingBox);
       if (recognition.distance > 1) {
@@ -160,12 +165,12 @@ class _TakeAttendanceState extends State<TakeAttendance> {
         hasRecognizedFace = true;
         await controller.stopImageStream();
         await Future.delayed(Duration(milliseconds: 500));
-        if (!mounted) return;
+        if (!mounted || _isWidgetDisposed) return;
         final response = await markAttendance(
             context: context,
             dbHelper: dbHelper,
             recognizedName: recognition.name);
-        if (!mounted) return;
+        if (!mounted || _isWidgetDisposed) return;
         handleAttendanceResult(
             context, response.result, response, widget.systemSettings);
 
@@ -207,9 +212,16 @@ class _TakeAttendanceState extends State<TakeAttendance> {
                 borderRadius: BorderRadius.circular(50), // Round corners
               ),
               child: IconButton(
-                onPressed: () {
-                  recognizer.close();
-                  Navigator.pop(context); // This will pop the camera screen
+                onPressed: () async {
+                  if (_isCameraInitialized &&
+                      controller.value.isStreamingImages) {
+                    await controller.stopImageStream();
+                  }
+                  if (!_isRecognizerClosed) recognizer.close();
+
+                  if (context.mounted) {
+                    Navigator.pop(context); // This will pop the camera screen
+                  }
                 },
                 icon: Icon(Icons.close,
                     color: Colors.white, size: 30), // Close icon

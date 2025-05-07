@@ -34,7 +34,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
   @override
   void initState() {
     super.initState();
-    textRecognizer = TextRecognizer();
+    textRecognizer = TextRecognizer(script: TextRecognitionScript.latin);
     loadLatestData();
   }
 
@@ -87,6 +87,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
                                 datePickerConfig: calendarConfigAnnualLeave(),
                                 annualLeaveUsed: annualLeaveUsed,
                                 onSubmit: onSubmitAnnualLeave,
+                                reasons: annualLeaveReasons,
                               )),
                     );
                   },
@@ -105,6 +106,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
                                 leaveType: 'medical_leave',
                                 datePickerConfig: calendarConfigMedicalLeave(),
                                 onSubmit: onSubmitMedicalLeave,
+                                reasons: medicalLeaveReasons,
                               )),
                     );
                   },
@@ -124,6 +126,7 @@ class _LeaveCategoryState extends State<LeaveCategory> {
                                 datePickerConfig:
                                     calendarConfigEmergencyLeave(),
                                 onSubmit: onSubmitEmergencyLeave,
+                                reasons: emergencyLeaveReasons,
                               )),
                     );
                   },
@@ -198,6 +201,18 @@ class _LeaveCategoryState extends State<LeaveCategory> {
 
     return false;
   }
+
+  List<String> annualLeaveReasons = [
+    "Vacation/Travel",
+    "Family Time/Personal Time",
+    "Festive Holiday/Religious Celebration",
+    "Rest/Recuperation",
+    "Family Event (e.g., Wedding, Birthday)",
+    "Childcare/School Holiday",
+    "Personal Errands",
+    "Special Occasion",
+    "Other (Please Specify)",
+  ];
 
   CalendarDatePicker2Config calendarConfigMedicalLeave() =>
       CalendarDatePicker2Config(
@@ -275,6 +290,13 @@ class _LeaveCategoryState extends State<LeaveCategory> {
     }
   }
 
+  List<String> medicalLeaveReasons = [
+    "General Illness",
+    "Injury or Accident",
+    "Medical Appointment/Check-up",
+    "Other (Please Specify)",
+  ];
+
   CalendarDatePicker2Config calendarConfigEmergencyLeave() =>
       CalendarDatePicker2Config(
           firstDate: DateTime.now(),
@@ -322,4 +344,12 @@ class _LeaveCategoryState extends State<LeaveCategory> {
     }
     return false;
   }
+
+  List<String> emergencyLeaveReasons = [
+    "Family Emergency",
+    "Bereavement/Death in Family",
+    "Natural Disaster/Weather-Related",
+    "Legal Obligation/Court Appearance",
+    "Transport Breakdown/Vehicle Accident",
+  ];
 }

@@ -14,6 +14,7 @@ class LeaveRequest extends StatefulWidget {
   final String leaveType;
   final int? annualLeaveUsed;
   final CalendarDatePicker2Config datePickerConfig;
+  final List<String> reasons;
   final Future<bool> Function(
       {required DateTime startDate,
       required DateTime endDate,
@@ -27,6 +28,7 @@ class LeaveRequest extends StatefulWidget {
     required this.leaveType,
     required this.datePickerConfig,
     required this.onSubmit,
+    required this.reasons,
     this.annualLeaveUsed,
   });
 
@@ -39,13 +41,6 @@ class _LeaveRequestState extends State<LeaveRequest> {
   LeaveLogic leaveLogic = LeaveLogic();
   final SupabaseDbHelper dbHelper = SupabaseDbHelper();
   final TextEditingController _reasonController = TextEditingController();
-  List<String> reasons = [
-    'Sick',
-    'Personal',
-    'Emergency',
-    'Family Matter',
-    'Other (Please Specify)'
-  ];
   String? selectedReason;
 
   File? _selectedImage;
@@ -203,7 +198,7 @@ class _LeaveRequestState extends State<LeaveRequest> {
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
               value: selectedReason,
-              items: reasons
+              items: widget.reasons
                   .map((reason) => DropdownMenuItem(
                         value: reason,
                         child: Text(reason),

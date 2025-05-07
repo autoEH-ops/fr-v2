@@ -158,3 +158,114 @@ SELECT cron.schedule(
     );
   $$
 );
+
+# end_date_adder #
+
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js";
+// Supabase setup
+const supabaseUrl = Deno.env.get("project_url");
+const supabaseServiceRoleKey = Deno.env.get("anon_key");
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+// Utility: Add 1 working day (skip Sundays)
+function addWorkingDay(date) {
+  const result = new Date(date);
+  result.setDate(result.getDate() + 1);
+  while(result.getDay() === 0){
+    result.setDate(result.getDate() + 1);
+  }
+  return result;
+}
+async function extendEndDatesBasedOnAttendanceAndLateness() {
+  const logs = [];
+  try {
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    logs.push(`📅 Running extension check for ${now.toDateString()}`);
+    // Step 1: Get absent users
+    const { data: absentData, error: absentError } = await supabase.from("attendance_v2").select("account_id").eq("attendance_status", "absent").gte("attendance_time", startOfDay.toISOString()).lte("attendance_time", endOfDay.toISOString());
+    if (absentError) {
+      logs.push("❌ Error fetching absentees: " + absentError.message);
+      return logs.join("\n");
+    }
+    const absentCount = absentData.length;
+    logs.push(`📌 Number of absentees: ${absentCount}`);
+    // Step 2: Get late users
+    const { data: lateData, error: lateError } = await supabase.from("activities").select("account_id").eq("is_late", true).gte("activity_time", startOfDay.toISOString()).lte("activity_time", endOfDay.toISOString());
+    if (lateError) {
+      logs.push("❌ Error fetching late users: " + lateError.message);
+      return logs.join("\n");
+    }
+    const lateCount = lateData.length;
+    logs.push(`📌 Number of late users: ${lateCount}`);
+    // Step 3: Combine account IDs (deduplicated)
+    const allAccountIds = new Set([
+      ...absentData.map((r)=>r.account_id),
+      ...lateData.map((r)=>r.account_id)
+    ]);
+    if (allAccountIds.size === 0) {
+      logs.push("✅ No absent or late users found.");
+      return logs.join("\n");
+    }
+    // Step 4: Fetch accounts to get current end_dates
+    const { data: accounts, error: accountsError } = await supabase.from("accounts").select("id, end_date, role").in("id", Array.from(allAccountIds));
+    if (accountsError) {
+      logs.push("❌ Error fetching account info: " + accountsError.message);
+      return logs.join("\n");
+    }
+    // Only process interns
+    const internAccounts = accounts.filter((a)=>a.role === "intern");
+    logs.push(`✅ Number of interns: ${internAccounts.length}.`);
+    logs.join("\n");
+    // Step 5: Update each end_date by 1 working day
+    for (const account of internAccounts){
+      const originalEndDate = new Date(account.end_date);
+      const newEndDate = addWorkingDay(originalEndDate);
+      const { error: updateError } = await supabase.from("accounts").update({
+        end_date: newEndDate.toISOString()
+      }).eq("id", account.id);
+      if (updateError) {
+        logs.push(`❌ Failed to update account_id ${account.id}: ${updateError.message}`);
+      } else {
+        logs.push(`📆 Extended end_date for account_id ${account.id} to ${newEndDate.toDateString()}`);
+      }
+    }
+    logs.push("✅ End date extension completed.");
+  } catch (err) {
+    logs.push("🔥 Unhandled error: " + err.message);
+  }
+  return logs.join("\n");
+}
+// HTTP entry point
+Deno.serve(async (req)=>{
+  if (req.method === "POST") {
+    const result = await extendEndDatesBasedOnAttendanceAndLateness();
+    return new Response(result, {
+      status: 200
+    });
+  }
+  return new Response("Method not allowed", {
+    status: 405
+  });
+});
+
+# SQL Scheduling #
+
+SELECT cron.schedule( 
+  'end_date_adder', -- job name
+  '25 4 * * 1-6',           -- cron schedule: 5:05 AM every day except Sunday
+  $$
+  SELECT
+    net.http_post(
+      url := 'https://wjxbrtxgxeyghxrkgmxz.supabase.co/functions/v1/end-date-adder',
+      headers := jsonb_build_object(
+        'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndqeGJydHhneGV5Z2h4cmtnbXh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5OTE2NzQsImV4cCI6MjA1OTU2NzY3NH0._tjqGu_9uRrbQRPNopdNbkajf3dbGhxOZNW2XNpKAD8',
+        'Content-Type', 'application/json'
+      ),
+      body := '{"name": "Functions"}'
+    );
+  $$
+);
